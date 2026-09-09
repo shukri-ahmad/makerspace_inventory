@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Makerspace Inventory App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- Navigation -->
+  <nav class="bg-slate-900 text-white p-4 shadow">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+      <h1 class="text-xl font-bold tracking-wide">Makerspace Inventory</h1>
+      <div class="space-x-4">
+        <button onclick="switchTab('dashboard')" class="hover:text-indigo-300 font-medium">Dashboard</button>
+        <button onclick="switchTab('borrow')" class="hover:text-indigo-300 font-medium">Borrow / Return</button>
+        <button onclick="switchTab('stock')" class="hover:text-indigo-300 font-medium">Update Stock</button>
+        <button onclick="switchTab('calendar')" class="hover:text-indigo-300 font-medium">Calendar</button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-6xl mx-auto p-6 space-y-6">
+
+    <!-- TAB 1: DASHBOARD -->
+    <div id="tab-dashboard" class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500">Storage Quantity</p>
+          <p id="stat-storage" class="text-4xl font-extrabold text-indigo-600 mt-2">0</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500">Display / Demo Quantity</p>
+          <p id="stat-display" class="text-4xl font-extrabold text-amber-500 mt-2">0</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
+          <p class="text-sm font-semibold text-slate-500">Currently Borrowed</p>
+          <p id="stat-borrowed" class="text-4xl font-extrabold text-rose-500 mt-2">0</p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
+        <h2 class="text-lg font-bold mb-4">Inventory Availability Overview</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 border-b border-slate-200 text-sm">
+                <th class="p-3">Item Name</th>
+                <th class="p-3">Storage</th>
+                <th class="p-3">Display / Demo</th>
+                <th class="p-3">Borrowed Out</th>
+                <th class="p-3">Total Owned</th>
+                <th class="p-3">Currently Available</th>
+              </tr>
+            </thead>
+            <tbody id="inventory-table-body" class="divide-y divide-slate-200">
+              <tr><td colspan="6" class="p-4 text-center text-slate-400">Loading data...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: BORROW & RETURN -->
+    <div id="tab-borrow" class="hidden space-y-6">
+      <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
+        <h2 class="text-lg font-bold mb-4">Check Out Item</h2>
+        <form id="borrow-form" onsubmit="handleBorrowSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Select Item</label>
+            <select id="borrow-item-select" required class="w-full border p-2 rounded bg-slate-50"></select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Borrower Name</label>
+            <input type="text" id="borrower-name" required class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Quantity</label>
+            <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Borrow Date</label>
+            <input type="date" id="borrow-date" required class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium mb-1">Expected Return Date</label>
+            <input type="date" id="return-date" required class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <div class="md:col-span-2">
+            <button type="submit" class="bg-indigo-600 text-white px-6 py-2 rounded font-semibold hover:bg-indigo-700">Submit Check-out</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
+        <h2 class="text-lg font-bold mb-4">Active Borrows Log</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="bg-slate-100 border-b text-sm">
+                <th class="p-3">Borrower</th>
+                <th class="p-3">Item</th>
+                <th class="p-3">Qty</th>
+                <th class="p-3">Borrow Date</th>
+                <th class="p-3">Return Date</th>
+                <th class="p-3">Action</th>
+              </tr>
+            </thead>
+            <tbody id="borrows-table-body" class="divide-y"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: UPDATE STOCK (+/-) -->
+    <div id="tab-stock" class="hidden">
+      <div class="bg-white p-6 rounded-lg shadow border border-slate-200 max-w-xl mx-auto">
+        <h2 class="text-lg font-bold mb-4">Add / Deduct Inventory</h2>
+        <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-1">Select Item</label>
+            <select id="stock-item-select" required class="w-full border p-2 rounded bg-slate-50"></select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Action Type</label>
+            <select id="stock-type" class="w-full border p-2 rounded bg-slate-50">
+              <option value="ADD">Add (+) Stock</option>
+              <option value="MINUS">Deduct (-) Stock</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Target Location</label>
+            <select id="stock-location" class="w-full border p-2 rounded bg-slate-50">
+              <option value="Storage">Storage</option>
+              <option value="Display">Display / Demo</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Quantity</label>
+            <input type="number" id="stock-qty" min="1" value="1" required class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-1">Reason / Notes</label>
+            <input type="text" id="stock-notes" placeholder="e.g. Purchased 2 new units" class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded font-semibold hover:bg-slate-800">Update Inventory</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- TAB 4: CALENDAR AVAILABILITY -->
+    <div id="tab-calendar" class="hidden bg-white p-6 rounded-lg shadow border border-slate-200">
+      <h2 class="text-lg font-bold mb-4">Daily Item Availability Calendar</h2>
+      <div id="calendar"></div>
+    </div>
+
+  </div>
+
+  <script>
+    // YOUR DEPLOYED APPS SCRIPT URL:
+    const API_URL = "https://script.google.com/macros/s/AKfycbwX-WFf2bW95SLuOfVjT4baoly5FoHWy4aLVRa9DqlrVDI5Sa2OdaoMsy_VVQV4xwL07w/exec";
+
+    let state = { items: [], borrows: [] };
+
+    async function fetchData() {
+      try {
+        const res = await fetch(API_URL);
+        state = await res.json();
+        render();
+      } catch (e) {
+        alert("Failed to load inventory data. Please check connection.");
+      }
+    }
+
+    function switchTab(tabName) {
+      ['dashboard', 'borrow', 'stock', 'calendar'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+      });
+      document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+      if(tabName === 'calendar') renderCalendar();
+    }
+
+    function render() {
+      let storageTot = 0, displayTot = 0, borrowedTot = 0;
+      const tableBody = document.getElementById('inventory-table-body');
+      tableBody.innerHTML = '';
+
+      const borrowSelect = document.getElementById('borrow-item-select');
+      const stockSelect = document.getElementById('stock-item-select');
+      borrowSelect.innerHTML = '';
+      stockSelect.innerHTML = '';
+
+      if (state.items.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items found in database. Add items to your Google Sheet!</td></tr>`;
+      }
+
+      state.items.forEach(item => {
+        const activeBorrows = state.borrows
+          .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
+          .reduce((sum, b) => sum + b.qty, 0);
+
+        const totalOwned = item.storage + item.display;
+        const available = totalOwned - activeBorrows;
+
+        storageTot += item.storage;
+        displayTot += item.display;
+        borrowedTot += activeBorrows;
+
+        tableBody.innerHTML += `
+          <tr>
+            <td class="p-3 font-medium">${item.name}</td>
+            <td class="p-3">${item.storage}</td>
+            <td class="p-3">${item.display}</td>
+            <td class="p-3 text-rose-600 font-semibold">${activeBorrows}</td>
+            <td class="p-3 font-bold">${totalOwned}</td>
+            <td class="p-3 font-bold ${available > 0 ? 'text-emerald-600' : 'text-rose-500'}">${available}</td>
+          </tr>
+        `;
+
+        borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
+        stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+      });
+
+      document.getElementById('stat-storage').innerText = storageTot;
+      document.getElementById('stat-display').innerText = displayTot;
+      document.getElementById('stat-borrowed').innerText = borrowedTot;
+
+      // Render Active Borrows Table
+      const borrowBody = document.getElementById('borrows-table-body');
+      borrowBody.innerHTML = '';
+      const activeBorrowsList = state.borrows.filter(b => b.status === "BORROWED");
+      
+      if (activeBorrowsList.length === 0) {
+        borrowBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No active borrows.</td></tr>`;
+      } else {
+        activeBorrowsList.forEach(b => {
+          const item = state.items.find(i => String(i.id) === String(b.itemId));
+          borrowBody.innerHTML += `
+            <tr>
+              <td class="p-3 font-medium">${b.borrower}</td>
+              <td class="p-3">${item ? item.name : 'Unknown'}</td>
+              <td class="p-3">${b.qty}</td>
+              <td class="p-3">${b.borrowDate}</td>
+              <td class="p-3">${b.returnDate}</td>
+              <td class="p-3">
+                <button onclick="handleReturn('${b.id}')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Return</button>
+              </td>
+            </tr>
+          `;
+        });
+      }
+    }
+
+    async function handleBorrowSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        action: "ADD_BORROW",
+        itemId: document.getElementById('borrow-item-select').value,
+        borrower: document.getElementById('borrower-name').value,
+        qty: Number(document.getElementById('borrow-qty').value),
+        borrowDate: document.getElementById('borrow-date').value,
+        returnDate: document.getElementById('return-date').value
+      };
+      await sendPost(payload);
+      document.getElementById('borrow-form').reset();
+      document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
+    }
+
+    async function handleReturn(borrowId) {
+      if(!confirm("Mark this item as returned?")) return;
+      await sendPost({ action: "RETURN_ITEM", borrowId: borrowId });
+    }
+
+    async function handleStockSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        action: "UPDATE_STOCK",
+        itemId: document.getElementById('stock-item-select').value,
+        type: document.getElementById('stock-type').value,
+        location: document.getElementById('stock-location').value,
+        qty: Number(document.getElementById('stock-qty').value),
+        notes: document.getElementById('stock-notes').value
+      };
+      await sendPost(payload);
+      document.getElementById('stock-form').reset();
+    }
+
+    async function sendPost(payload) {
+      await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      fetchData();
+    }
+
+    function renderCalendar() {
+      const calendarEl = document.getElementById('calendar');
+      calendarEl.innerHTML = '';
+
+      const events = state.borrows.filter(b => b.status === "BORROWED").map(b => {
+        const item = state.items.find(i => String(i.id) === String(b.itemId));
+        return {
+          title: `[${b.qty}x] ${item ? item.name : 'Item'} - ${b.borrower}`,
+          start: b.borrowDate,
+          end: b.returnDate,
+          color: '#e11d48'
+        };
+      });
+
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        events: events
+      });
+      calendar.render();
+    }
+
+    // Set today's date in borrow form default
+    document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
+    
+    // Initial Load
+    fetchData();
+  </script>
+</body>
+</html>
