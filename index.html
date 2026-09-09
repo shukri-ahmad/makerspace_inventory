@@ -159,18 +159,27 @@
   </div>
 
   <script>
-    // YOUR DEPLOYED APPS SCRIPT URL:
-    const API_URL = "https://script.google.com/macros/s/AKfycbwX-WFf2bW95SLuOfVjT4baoly5FoHWy4aLVRa9DqlrVDI5Sa2OdaoMsy_VVQV4xwL07w/exec";
+    // YOUR NEW APPS SCRIPT URL:
+    const API_URL = "https://script.google.com/macros/s/AKfycbzNP0qE3sK92Sv_QZ3HMP-VXZX-bNrPxqCvid2Y8AZmjyeabOdDdgQDzOBVv5Dd55f13g/exec";
 
     let state = { items: [], borrows: [] };
 
     async function fetchData() {
       try {
-        const res = await fetch(API_URL);
+        const res = await fetch(API_URL, {
+          method: "GET",
+          redirect: "follow"
+        });
+        
+        if (!res.ok) {
+          throw new Error(`HTTP Error! Status: ${res.status}`);
+        }
+
         state = await res.json();
         render();
       } catch (e) {
-        alert("Failed to load inventory data. Please check connection.");
+        console.error("Fetch Error:", e);
+        alert("Failed to load inventory data. Please check browser console.");
       }
     }
 
@@ -288,11 +297,23 @@
     }
 
     async function sendPost(payload) {
-      await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-      fetchData();
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain"
+          },
+          body: JSON.stringify(payload),
+          redirect: "follow"
+        });
+        
+        // Wait 1 second for Google Apps Script to process spreadsheet update
+        setTimeout(fetchData, 1000);
+      } catch (e) {
+        console.error("Post Error:", e);
+        alert("Failed to save changes.");
+      }
     }
 
     function renderCalendar() {
