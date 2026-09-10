@@ -159,7 +159,7 @@
 
       </div>
 
-      <!-- Active Borrows Table (Unchanged) -->
+      <!-- Active Borrows Table -->
       <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 mt-6">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
           <h2 class="text-xl font-bold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
@@ -237,13 +237,14 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbz-lXeqV6K1CBP-FOyebmVkshtVKnJ_UmNR6lHxkKEJDnHjG16DyVxtacG9sTZOyfMADw/exec";
+    // --- UPDATED API URL ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbxCc-Xk27N6ihyEkqiKSo-uz_yAauFW06UksR2zvKBKRiSOY2whBdj5XZRJbeyua8Ar-Q/exec";
 
     let state = { items: [], borrows: [] };
     let sortColumn = 'borrower';
     let sortAscending = true;
     let editingBorrowId = null;
-    let borrowCart = []; // Holds items pending checkout
+    let borrowCart = []; 
     
     // Auth State
     let adminPin = sessionStorage.getItem('adminPin');
@@ -414,20 +415,18 @@
       if(rDate < bDate) { alert("Return date cannot be earlier than borrow date."); return; }
       if(qty < 1) { alert("Quantity must be at least 1."); return; }
 
-      // Check current availability in database
       const check = checkAvailabilityForDates(itemId, qty, bDate, rDate);
       if(!check.isAvailable) {
         alert(`Cannot add ${qty}x ${itemName}.\nOnly ${check.availableQty} available for those dates.`);
         return;
       }
 
-      // Check if already in cart and combine quantities to test limit
       const existing = borrowCart.find(i => i.itemId === itemId);
       if(existing) {
         existing.qty += qty;
         const combinedCheck = checkAvailabilityForDates(itemId, existing.qty, bDate, rDate);
         if(!combinedCheck.isAvailable) {
-          existing.qty -= qty; // revert
+          existing.qty -= qty; 
           alert(`Limit reached! You cannot add more ${itemName}.`);
           return;
         }
@@ -436,7 +435,7 @@
       }
       
       renderCart();
-      document.getElementById('borrow-qty').value = 1; // reset qty input
+      document.getElementById('borrow-qty').value = 1; 
     }
 
     function removeBorrowItem(index) {
@@ -477,7 +476,6 @@
         return; 
       }
 
-      // One final validation pass just in case
       for(let item of borrowCart) {
         const check = checkAvailabilityForDates(item.itemId, item.qty, bDate, rDate);
         if(!check.isAvailable) {
@@ -497,7 +495,6 @@
 
       await sendPost(payload);
       
-      // Reset form after successful post
       borrowCart = [];
       renderCart();
       document.getElementById('borrower-name').value = '';
