@@ -13,15 +13,10 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .bg-watermark {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background-image: url('LogoMakerspace.jpg');
-      background-size: 60vmin;
-      background-position: center;
-      background-repeat: no-repeat;
-      opacity: 0.12;
-      z-index: 0;
-      pointer-events: none;
+      background-size: 60vmin; background-position: center;
+      background-repeat: no-repeat; opacity: 0.12; z-index: 0; pointer-events: none;
     }
   </style>
 </head>
@@ -46,11 +41,9 @@
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-700 text-white transition border-b-2 border-amber-400">Dashboard</button>
         <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Availability Map</button>
         
-        <!-- Hidden from public by default -->
         <button onclick="switchTab('borrow')" id="nav-borrow" class="hidden px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Borrow / Return</button>
         <button onclick="switchTab('stock')" id="nav-stock" class="hidden px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Update Stock</button>
         
-        <!-- Auth Button -->
         <button onclick="toggleAuth()" id="btn-auth" class="ml-4 px-3 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-slate-800 hover:bg-black text-amber-400 border border-amber-500 transition shadow">
           Admin Login
         </button>
@@ -88,42 +81,86 @@
       </div>
     </div>
 
-    <!-- TAB 2: BORROW & RETURN (ADMIN ONLY) -->
+    <!-- TAB 2: BORROW & RETURN (MULTI-CART LAYOUT) -->
     <div id="tab-borrow" class="hidden space-y-6">
-      <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Check Out Equipment</h2>
-        <form id="borrow-form" onsubmit="handleBorrowSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Select Item <span class="text-rose-500">*</span></label>
-            <select id="borrow-item-select" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base"></select>
+      
+      <!-- Multi-Borrow Grid Layout -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Panel: Data Entry -->
+        <div class="lg:col-span-1 space-y-6">
+          
+          <!-- Step 1: Borrower Info -->
+          <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
+            <h2 class="text-lg font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">1. Borrower Details</h2>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Borrower Name <span class="text-rose-500">*</span></label>
+                <input type="text" id="borrower-name" class="w-full border border-slate-300 p-2 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Contact Number <span class="text-rose-500">*</span></label>
+                <input type="tel" id="borrower-contact" placeholder="e.g. 0123456789" class="w-full border border-slate-300 p-2 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Borrow Date <span class="text-rose-500">*</span></label>
+                <input type="date" id="borrow-date" class="w-full border border-slate-300 p-2 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Return Date <span class="text-rose-500">*</span></label>
+                <input type="date" id="return-date" class="w-full border border-slate-300 p-2 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-sm">
+              </div>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Borrower Name <span class="text-rose-500">*</span></label>
-            <input type="text" id="borrower-name" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
+
+          <!-- Step 2: Add Items -->
+          <div class="bg-blue-50/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-blue-200">
+            <h2 class="text-lg font-bold mb-4 text-blue-900 uppercase tracking-wide border-b border-blue-200 pb-2">2. Add Equipment</h2>
+            <div class="space-y-3">
+              <div>
+                <label class="block text-xs font-bold uppercase text-blue-800 mb-1">Select Item <span class="text-rose-500">*</span></label>
+                <select id="borrow-item-select" class="w-full border border-blue-300 p-2 rounded-lg bg-white focus:ring-2 focus:ring-blue-800 outline-none text-sm"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-bold uppercase text-blue-800 mb-1">Quantity <span class="text-rose-500">*</span></label>
+                <input type="number" id="borrow-qty" min="1" value="1" class="w-full border border-blue-300 p-2 rounded-lg bg-white focus:ring-2 focus:ring-blue-800 outline-none text-sm">
+              </div>
+              <button type="button" onclick="addBorrowItem()" class="mt-2 w-full bg-blue-900 text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-950 transition uppercase tracking-wider text-sm shadow">
+                + Add To List
+              </button>
+            </div>
           </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Contact Number <span class="text-rose-500">*</span></label>
-            <input type="tel" id="borrower-contact" placeholder="e.g. 0123456789" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
+
+        </div>
+
+        <!-- Right Panel: Cart & Confirm -->
+        <div class="lg:col-span-2 bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
+          <h2 class="text-lg font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">3. Items to Check Out</h2>
+          
+          <div class="flex-grow overflow-auto mb-6 bg-slate-50 rounded-lg border border-slate-200 min-h-[200px]">
+            <table class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-200 text-slate-700 text-xs uppercase tracking-wider">
+                  <th class="p-3">Equipment Item</th>
+                  <th class="p-3 text-center">Qty</th>
+                  <th class="p-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="cart-table-body" class="divide-y divide-slate-200">
+                <tr><td colspan="3" class="p-6 text-center text-slate-400 italic">List is empty. Add equipment from the left panel.</td></tr>
+              </tbody>
+            </table>
           </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Quantity <span class="text-rose-500">*</span></label>
-            <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Borrow Date <span class="text-rose-500">*</span></label>
-            <input type="date" id="borrow-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
-          </div>
-          <div>
-            <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Expected Return Date <span class="text-rose-500">*</span></label>
-            <input type="date" id="return-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
-          </div>
-          <div class="md:col-span-2 mt-2">
-            <button type="submit" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-950 transition uppercase tracking-wider text-base shadow">Confirm Check-out</button>
-          </div>
-        </form>
+
+          <button type="button" onclick="submitMultiBorrow()" class="w-full bg-emerald-600 text-white px-6 py-4 rounded-xl font-extrabold hover:bg-emerald-700 transition uppercase tracking-widest text-lg shadow-lg">
+            Confirm Multi-Item Check-Out
+          </button>
+        </div>
+
       </div>
 
-      <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
+      <!-- Active Borrows Table (Unchanged) -->
+      <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 mt-6">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
           <h2 class="text-xl font-bold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
           <p class="text-xs text-slate-500 font-medium">Click column headers to sort</p>
@@ -206,6 +243,7 @@
     let sortColumn = 'borrower';
     let sortAscending = true;
     let editingBorrowId = null;
+    let borrowCart = []; // Holds items pending checkout
     
     // Auth State
     let adminPin = sessionStorage.getItem('adminPin');
@@ -217,7 +255,7 @@
         sessionStorage.removeItem('adminPin');
         adminPin = null;
         isAdmin = false;
-        switchTab('dashboard'); // Kick back to public view
+        switchTab('dashboard'); 
       } else {
         const pin = prompt("Enter Admin PIN:");
         if (pin) {
@@ -227,14 +265,13 @@
         }
       }
       updateAuthUI();
-      render(); // Re-render tables to hide/show action buttons
+      render(); 
     }
 
     function updateAuthUI() {
       const btn = document.getElementById('btn-auth');
       const navBorrow = document.getElementById('nav-borrow');
       const navStock = document.getElementById('nav-stock');
-      
       if (isAdmin) {
         btn.innerText = "Logout Admin";
         btn.classList.replace('bg-slate-800', 'bg-rose-700');
@@ -307,7 +344,6 @@
       });
       document.getElementById(`tab-${tabName}`).classList.remove('hidden');
       document.getElementById(`nav-${tabName}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-700 text-white transition border-b-2 border-amber-400";
-      
       if(tabName === 'calendar') renderHeatmap();
     }
 
@@ -361,6 +397,127 @@
         stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
       renderBorrowsTable();
+    }
+
+    // --- CART LOGIC ---
+    function addBorrowItem() {
+      const itemSelect = document.getElementById('borrow-item-select');
+      if (!itemSelect.value) return;
+
+      const itemId = itemSelect.value;
+      const itemName = itemSelect.options[itemSelect.selectedIndex].text.split(' (')[0];
+      const qty = Number(document.getElementById('borrow-qty').value);
+      const bDate = document.getElementById('borrow-date').value;
+      const rDate = document.getElementById('return-date').value;
+
+      if(!bDate || !rDate) { alert("Please set borrow and return dates first."); return; }
+      if(rDate < bDate) { alert("Return date cannot be earlier than borrow date."); return; }
+      if(qty < 1) { alert("Quantity must be at least 1."); return; }
+
+      // Check current availability in database
+      const check = checkAvailabilityForDates(itemId, qty, bDate, rDate);
+      if(!check.isAvailable) {
+        alert(`Cannot add ${qty}x ${itemName}.\nOnly ${check.availableQty} available for those dates.`);
+        return;
+      }
+
+      // Check if already in cart and combine quantities to test limit
+      const existing = borrowCart.find(i => i.itemId === itemId);
+      if(existing) {
+        existing.qty += qty;
+        const combinedCheck = checkAvailabilityForDates(itemId, existing.qty, bDate, rDate);
+        if(!combinedCheck.isAvailable) {
+          existing.qty -= qty; // revert
+          alert(`Limit reached! You cannot add more ${itemName}.`);
+          return;
+        }
+      } else {
+        borrowCart.push({ itemId, itemName, qty });
+      }
+      
+      renderCart();
+      document.getElementById('borrow-qty').value = 1; // reset qty input
+    }
+
+    function removeBorrowItem(index) {
+      borrowCart.splice(index, 1);
+      renderCart();
+    }
+
+    function renderCart() {
+      const tbody = document.getElementById('cart-table-body');
+      if(borrowCart.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="p-6 text-center text-slate-400 italic">List is empty. Add equipment from the left panel.</td></tr>';
+        return;
+      }
+      tbody.innerHTML = '';
+      borrowCart.forEach((item, idx) => {
+        tbody.innerHTML += `
+          <tr class="bg-white hover:bg-slate-50 transition border-b border-slate-200">
+            <td class="p-3 font-semibold text-slate-800">${item.itemName}</td>
+            <td class="p-3 text-center font-mono font-bold text-blue-900">${item.qty}</td>
+            <td class="p-3 text-center">
+              <button onclick="removeBorrowItem(${idx})" class="bg-rose-100 text-rose-600 px-3 py-1 rounded text-xs font-bold hover:bg-rose-200 border border-rose-200">Remove</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    async function submitMultiBorrow() {
+      if(borrowCart.length === 0) { alert("Please add at least one item to the list."); return; }
+      
+      const borrower = document.getElementById('borrower-name').value;
+      const contact = document.getElementById('borrower-contact').value;
+      const bDate = document.getElementById('borrow-date').value;
+      const rDate = document.getElementById('return-date').value;
+
+      if(!borrower || !contact || !bDate || !rDate) { 
+        alert("Please fill in Borrower Name, Contact, and Dates."); 
+        return; 
+      }
+
+      // One final validation pass just in case
+      for(let item of borrowCart) {
+        const check = checkAvailabilityForDates(item.itemId, item.qty, bDate, rDate);
+        if(!check.isAvailable) {
+          alert(`Error: ${item.itemName} no longer has ${item.qty} available. Please adjust your cart.`);
+          return;
+        }
+      }
+
+      const payload = {
+        action: "ADD_MULTI_BORROW",
+        borrower: borrower,
+        contact: contact,
+        borrowDate: bDate,
+        returnDate: rDate,
+        itemsJSON: JSON.stringify(borrowCart)
+      };
+
+      await sendPost(payload);
+      
+      // Reset form after successful post
+      borrowCart = [];
+      renderCart();
+      document.getElementById('borrower-name').value = '';
+      document.getElementById('borrower-contact').value = '';
+    }
+
+    function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
+      const targetItem = state.items.find(i => String(i.id) === String(itemId));
+      if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
+      const totalOwned = targetItem.storage + targetItem.display;
+      const cleanReqStart = cleanToIsoDate(reqStart);
+      const cleanReqEnd = cleanToIsoDate(reqEnd);
+
+      const overlappingBorrows = state.borrows.filter(b => {
+        if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
+        return (cleanToIsoDate(b.borrowDate) <= cleanReqEnd && cleanToIsoDate(b.returnDate) >= cleanReqStart);
+      });
+      const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
+      const availableForDates = totalOwned - maxReservedQty;
+      return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
     }
 
     function sortTable(columnKey) {
@@ -422,7 +579,7 @@
               : `<span class="text-xs text-slate-400 italic">Login to edit</span>`;
 
             borrowBody.innerHTML += `
-              <tr class="hover:bg-slate-50 transition">
+              <tr class="hover:bg-slate-50 transition border-b border-slate-100">
                 <td class="p-3 font-semibold text-slate-900">${b.borrower}</td>
                 <td class="p-3 font-mono text-xs text-slate-600">${isAdmin ? (cleanContact || '-') : '*** (Hidden)'}</td>
                 <td class="p-3">${item ? item.name : 'Unknown'}</td>
@@ -454,38 +611,6 @@
       editingBorrowId = null;
     }
 
-    function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
-      const targetItem = state.items.find(i => String(i.id) === String(itemId));
-      if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
-      const totalOwned = targetItem.storage + targetItem.display;
-      const cleanReqStart = cleanToIsoDate(reqStart);
-      const cleanReqEnd = cleanToIsoDate(reqEnd);
-
-      const overlappingBorrows = state.borrows.filter(b => {
-        if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
-        return (cleanToIsoDate(b.borrowDate) <= cleanReqEnd && cleanToIsoDate(b.returnDate) >= cleanReqStart);
-      });
-      const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
-      const availableForDates = totalOwned - maxReservedQty;
-      return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
-    }
-
-    async function handleBorrowSubmit(e) {
-      e.preventDefault();
-      const itemId = document.getElementById('borrow-item-select').value;
-      const qty = Number(document.getElementById('borrow-qty').value);
-      const borrowDate = document.getElementById('borrow-date').value;
-      const returnDate = document.getElementById('return-date').value;
-
-      if (returnDate < borrowDate) { alert("Return date cannot be earlier than the borrow date."); return; }
-      const check = checkAvailabilityForDates(itemId, qty, borrowDate, returnDate);
-      if (!check.isAvailable) { alert(`Cannot approve borrow request!\n\nFor the selected date range, only ${check.availableQty} unit(s) are available.`); return; }
-
-      await sendPost({ action: "ADD_BORROW", itemId: itemId, borrower: document.getElementById('borrower-name').value, contact: document.getElementById('borrower-contact').value, qty: qty, borrowDate: borrowDate, returnDate: returnDate });
-      document.getElementById('borrow-form').reset();
-      document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
-    }
-
     async function handleReturn(borrowId) {
       if(!confirm("Mark this item as returned?")) return;
       await sendPost({ action: "RETURN_ITEM", borrowId: borrowId });
@@ -499,8 +624,7 @@
 
     async function sendPost(payload) {
       if(!isAdmin) { alert("You must be logged in as Admin to perform this action."); return; }
-      
-      payload.pin = adminPin; // Attach the secret PIN to every post request
+      payload.pin = adminPin; 
       
       try {
         const bodyParams = new URLSearchParams(payload);
@@ -567,6 +691,11 @@
     }
 
     if(document.getElementById('borrow-date')) document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
+    if(document.getElementById('return-date')) {
+      const tmr = new Date();
+      tmr.setDate(tmr.getDate() + 1);
+      document.getElementById('return-date').value = tmr.toISOString().split('T')[0];
+    }
     fetchData();
   </script>
 </body>
