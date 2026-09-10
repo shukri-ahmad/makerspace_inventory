@@ -52,10 +52,10 @@
             <thead>
               <tr class="bg-slate-900 text-white text-sm uppercase tracking-wider">
                 <th class="p-4 rounded-tl-lg w-2/5 font-extrabold">Item Name & Stock Level</th>
+                <th class="p-4 text-center font-extrabold">Total Owned</th>
                 <th class="p-4 text-center font-extrabold">Storage</th>
                 <th class="p-4 text-center font-extrabold">Display</th>
                 <th class="p-4 text-center font-extrabold text-rose-300">Borrowed</th>
-                <th class="p-4 text-center font-extrabold">Total Owned</th>
                 <th class="p-4 text-center rounded-tr-lg bg-blue-950 text-amber-400 text-base font-extrabold border-l border-blue-800 shadow-inner">Currently Available</th>
               </tr>
             </thead>
@@ -293,10 +293,10 @@
               </div>
               <div class="text-xs text-slate-500 font-mono mt-1 font-semibold">${pct}% available (${available} of ${totalOwned} ready)</div>
             </td>
+            <td class="p-4 text-center font-mono text-lg font-extrabold">${totalOwned}</td>
             <td class="p-4 text-center font-mono text-lg font-semibold">${item.storage}</td>
             <td class="p-4 text-center font-mono text-lg font-semibold">${item.display}</td>
             <td class="p-4 text-center font-mono text-lg text-rose-600 font-extrabold">${activeBorrowCount}</td>
-            <td class="p-4 text-center font-mono text-lg font-extrabold">${totalOwned}</td>
             <td class="p-4 text-center border-l border-slate-200 bg-slate-50/50">
               <span class="inline-block px-4 py-1.5 rounded-full font-mono text-2xl font-black border shadow-sm ${badgeBg}">
                 ${available}
