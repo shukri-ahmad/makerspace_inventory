@@ -5,12 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Makerspace @ UTHM - Inventory App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Space Grotesk', system-ui, sans-serif; }
+    /* Hide scrollbar for the heatmap for a cleaner look */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -32,7 +34,7 @@
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400">Dashboard</button>
         <button onclick="switchTab('borrow')" id="nav-borrow" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Borrow / Return</button>
         <button onclick="switchTab('stock')" id="nav-stock" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Update Stock</button>
-        <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Calendar</button>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Availability Map</button>
       </div>
     </div>
   </nav>
@@ -163,10 +165,23 @@
       </div>
     </div>
 
-    <!-- TAB 4: CALENDAR AVAILABILITY -->
+    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
     <div id="tab-calendar" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-      <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Daily Item Availability Calendar</h2>
-      <div id="calendar"></div>
+      
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
+        <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">14-Day Availability Matrix</h2>
+        
+        <!-- Heatmap Legend -->
+        <div class="flex space-x-4 text-xs font-bold uppercase tracking-wider border border-slate-200 p-2 rounded-lg bg-slate-50">
+          <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded bg-emerald-400"></div><span>Available</span></div>
+          <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded bg-amber-400"></div><span>Low Stock</span></div>
+          <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded bg-rose-500"></div><span>Zero Stock</span></div>
+        </div>
+      </div>
+
+      <!-- The Grid gets rendered here -->
+      <div id="heatmap-container" class="w-full"></div>
+
     </div>
 
   </div>
@@ -179,17 +194,15 @@
     let sortAscending = true;
     let editingBorrowId = null;
 
+    // Standardizes dates cleanly to YYYY-MM-DD
     function cleanToIsoDate(val) {
       if (!val) return '';
       let str = String(val).trim().replace(/['\s]/g, '');
       if (str.includes('T')) str = str.split('T')[0];
-
       if (/^\d{8}$/.test(str)) {
         return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
       }
-
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-
       if (str.includes('/')) {
         const p = str.split('/');
         if (p.length === 3) {
@@ -197,7 +210,6 @@
           return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
         }
       }
-
       const d = new Date(val);
       if (!isNaN(d.getTime())) {
         const y = d.getFullYear();
@@ -208,6 +220,7 @@
       return '';
     }
 
+    // Displays strictly as DD/MM/YYYY
     function toDisplayDate(val) {
       if (!val) return '-';
       let str = String(val).trim().replace(/['\s]/g, '');
@@ -222,7 +235,6 @@
       const s = cleanToIsoDate(startVal);
       const e = cleanToIsoDate(endVal);
       if (!s || !e) return 0;
-
       const d1 = new Date(s + 'T00:00:00');
       const d2 = new Date(e + 'T00:00:00');
       const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
@@ -249,7 +261,7 @@
       document.getElementById(`tab-${tabName}`).classList.remove('hidden');
       document.getElementById(`nav-${tabName}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400";
       
-      if(tabName === 'calendar') renderCalendar();
+      if(tabName === 'calendar') renderHeatmap();
     }
 
     function render() {
@@ -523,25 +535,89 @@
       }
     }
 
-    function renderCalendar() {
-      const calendarEl = document.getElementById('calendar');
-      calendarEl.innerHTML = '';
+    // Custom 14-Day Heatmap Logic
+    function renderHeatmap() {
+      const container = document.getElementById('heatmap-container');
+      container.innerHTML = '';
 
-      const events = state.borrows.filter(b => b.status === "BORROWED").map(b => {
-        const item = state.items.find(i => String(i.id) === String(b.itemId));
-        return {
-          title: `[${b.qty}x] ${item ? item.name : 'Item'} - ${b.borrower} (${b.contact})`,
-          start: cleanToIsoDate(b.borrowDate),
-          end: cleanToIsoDate(b.returnDate),
-          color: '#1e3a8a'
-        };
+      if (state.items.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 text-center py-6">No inventory available to map.</p>';
+        return;
+      }
+
+      // Generate dates for the next 14 days
+      const dates = [];
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      for (let i = 0; i < 14; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+        dates.push(d);
+      }
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+      // Build Table Wrapper
+      let html = `<div class="overflow-x-auto no-scrollbar border border-slate-200 rounded-lg">
+        <table class="w-full text-center border-collapse">
+          <thead>
+            <tr class="bg-slate-900 text-white text-xs uppercase tracking-wider">
+              <th class="p-3 text-left sticky left-0 bg-slate-900 z-10 w-48 shadow-[1px_0_0_rgba(0,0,0,1)]">Equipment Item</th>`;
+      
+      // Date Headers
+      dates.forEach(d => {
+        html += `<th class="p-2 min-w-[70px] border-l border-slate-700">
+          <div class="text-[10px] text-slate-400 font-bold mb-0.5">${dayNames[d.getDay()]}</div>
+          <div class="font-mono text-sm">${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div>
+        </th>`;
+      });
+      html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
+
+      // Item Rows
+      state.items.forEach(item => {
+        const totalOwned = item.storage + item.display;
+        
+        html += `<tr class="hover:bg-slate-50 transition">
+          <td class="p-3 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[1px_0_5px_rgba(0,0,0,0.1)] z-10">
+            ${item.name}
+            <div class="text-[10px] text-slate-500 font-mono mt-0.5">Total Owned: ${totalOwned}</div>
+          </td>`;
+        
+        // Date Cells for the Item
+        dates.forEach(d => {
+          const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          
+          const usedQty = state.borrows.reduce((sum, b) => {
+            if (String(b.itemId) === String(item.id) && b.status === "BORROWED") {
+              const bStart = cleanToIsoDate(b.borrowDate);
+              const bEnd = cleanToIsoDate(b.returnDate);
+              if (dateStr >= bStart && dateStr <= bEnd) return sum + b.qty;
+            }
+            return sum;
+          }, 0);
+
+          const available = totalOwned - usedQty;
+          
+          let bgColor = 'bg-emerald-100 text-emerald-800 border-emerald-200'; 
+          if (totalOwned === 0) {
+            bgColor = 'bg-slate-100 text-slate-400 border-slate-200';
+          } else if (available === 0) {
+            bgColor = 'bg-rose-500 text-white border-rose-600 font-bold'; 
+          } else if (available < totalOwned * 0.5) {
+            bgColor = 'bg-amber-300 text-amber-900 border-amber-400'; 
+          }
+
+          html += `<td class="p-1.5 border-l border-slate-100">
+            <div class="w-full h-10 flex items-center justify-center rounded-md border ${bgColor} font-mono text-sm shadow-sm transition">
+              ${totalOwned === 0 ? '-' : available}
+            </div>
+          </td>`;
+        });
+        
+        html += `</tr>`;
       });
 
-      const calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        events: events
-      });
-      calendar.render();
+      html += `</tbody></table></div>`;
+      container.innerHTML = html;
     }
 
     document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
