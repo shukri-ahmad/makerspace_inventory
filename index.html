@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Makerspace @ UTHM - Inventory App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Added Chart.js for the Dashboard Chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -91,19 +93,16 @@
     <!-- TAB 1: DASHBOARD -->
     <div id="tab-dashboard" class="animate-fade-up space-y-8">
       
-      <!-- Top Stat Cards (Now Beautiful Gradients) -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-gradient-to-br from-emerald-500 to-emerald-700 p-6 rounded-2xl shadow-lg border border-emerald-400 text-white hover:-translate-y-1 transition-transform duration-300">
-          <p class="text-xs font-bold uppercase tracking-widest text-emerald-100 mb-1 opacity-90">Total In Storage</p>
-          <p id="stat-storage" class="text-5xl font-black drop-shadow-md">0</p>
+      <!-- Top Chart Container -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg border-t-4 border-t-emerald-500">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-extrabold text-slate-900 uppercase tracking-wider">Equipment Utilization Chart</h2>
+          <span class="flex items-center gap-2 text-xs uppercase font-bold tracking-widest text-slate-500">
+            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Live Data
+          </span>
         </div>
-        <div class="bg-gradient-to-br from-amber-400 to-amber-600 p-6 rounded-2xl shadow-lg border border-amber-300 text-white hover:-translate-y-1 transition-transform duration-300">
-          <p class="text-xs font-bold uppercase tracking-widest text-amber-100 mb-1 opacity-90">Display / Demo Units</p>
-          <p id="stat-display" class="text-5xl font-black drop-shadow-md">0</p>
-        </div>
-        <div class="bg-gradient-to-br from-rose-500 to-rose-700 p-6 rounded-2xl shadow-lg border border-rose-400 text-white hover:-translate-y-1 transition-transform duration-300">
-          <p class="text-xs font-bold uppercase tracking-widest text-rose-100 mb-1 opacity-90">Currently Borrowed Out</p>
-          <p id="stat-borrowed" class="text-5xl font-black drop-shadow-md">0</p>
+        <div class="relative h-72 w-full">
+          <canvas id="inventoryChart"></canvas>
         </div>
       </div>
 
@@ -114,9 +113,6 @@
             <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wider">Inventory Status</h2>
             <p class="text-slate-500 text-sm mt-1">Live tracking of all Makerspace equipment</p>
           </div>
-          <span class="flex items-center gap-2 text-xs uppercase font-bold tracking-widest bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full border border-emerald-200 shadow-sm">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> System Live
-          </span>
         </div>
         
         <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
@@ -339,6 +335,7 @@
     let sortAscending = true;
     let editingBorrowId = null;
     let borrowCart = []; 
+    let inventoryChartInstance = null; // Holds the Chart.js instance
     
     // Auth State
     let adminPin = sessionStorage.getItem('adminPin');
@@ -439,7 +436,6 @@
       tabs.forEach(t => {
         const el = document.getElementById(`tab-${t}`);
         el.classList.add('hidden');
-        // Reset animation
         el.classList.remove('animate-fade-up');
         void el.offsetWidth; // trigger reflow
         
@@ -474,7 +470,10 @@
         tableBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium">No items found in database.</td></tr>`;
       }
 
-      let storageTot = 0, displayTot = 0, borrowedTot = 0;
+      // Arrays for Chart.js
+      let chartLabels = [];
+      let chartAvailable = [];
+      let chartBorrowed = [];
 
       state.items.forEach(item => {
         const activeBorrowCount = state.borrows
@@ -485,9 +484,10 @@
         const available = totalOwned - activeBorrowCount;
         const pct = totalOwned > 0 ? Math.max(0, Math.min(100, Math.round((available / totalOwned) * 100))) : 0;
 
-        storageTot += item.storage;
-        displayTot += item.display;
-        borrowedTot += activeBorrowCount;
+        // Push data to Chart arrays
+        chartLabels.push(item.name);
+        chartAvailable.push(available);
+        chartBorrowed.push(activeBorrowCount);
 
         let barColor = 'bg-gradient-to-r from-emerald-400 to-emerald-500';
         let badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -518,12 +518,80 @@
         stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
 
-      // Update Top Dash Stats
-      document.getElementById('stat-storage').innerText = storageTot;
-      document.getElementById('stat-display').innerText = displayTot;
-      document.getElementById('stat-borrowed').innerText = borrowedTot;
-
+      renderChart(chartLabels, chartAvailable, chartBorrowed);
       renderBorrowsTable();
+    }
+
+    // --- CHART JS LOGIC ---
+    function renderChart(labels, availableData, borrowedData) {
+      const ctx = document.getElementById('inventoryChart').getContext('2d');
+      
+      // Destroy existing chart if updating to prevent overlap glitches
+      if (inventoryChartInstance) {
+        inventoryChartInstance.destroy();
+      }
+
+      inventoryChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Available Stock',
+              data: availableData,
+              backgroundColor: 'rgba(16, 185, 129, 0.85)', // Emerald 500
+              hoverBackgroundColor: 'rgba(16, 185, 129, 1)',
+              borderRadius: 4
+            },
+            {
+              label: 'Borrowed Out',
+              data: borrowedData,
+              backgroundColor: 'rgba(244, 63, 94, 0.85)', // Rose 500
+              hoverBackgroundColor: 'rgba(244, 63, 94, 1)',
+              borderRadius: 4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                font: { family: "'Space Grotesk', sans-serif", size: 12, weight: 'bold' },
+                color: '#475569',
+                usePointStyle: true,
+                boxWidth: 8
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(15, 23, 42, 0.9)',
+              titleFont: { family: "'Space Grotesk', sans-serif", size: 14, weight: 'bold' },
+              bodyFont: { family: "'Space Grotesk', sans-serif", size: 13 },
+              padding: 12,
+              cornerRadius: 8
+            }
+          },
+          scales: {
+            x: {
+              stacked: true,
+              grid: { display: false },
+              ticks: { font: { family: "'Space Grotesk', sans-serif", weight: 'bold' }, color: '#64748b' }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              grid: { color: 'rgba(226, 232, 240, 0.5)' },
+              ticks: { stepSize: 1, font: { family: "'Space Grotesk', sans-serif" }, color: '#64748b' }
+            }
+          }
+        }
+      });
     }
 
     // --- CART LOGIC ---
@@ -587,7 +655,7 @@
       tbody.innerHTML = '';
       borrowCart.forEach((item, idx) => {
         tbody.innerHTML += `
-          <tr class="bg-white hover:bg-slate-50 transition">
+          <tr class="bg-white hover:bg-slate-50 transition border-b border-slate-100">
             <td class="p-4 font-bold text-slate-800">${item.itemName}</td>
             <td class="p-4 text-center font-mono font-black text-blue-900 text-lg">${item.qty}</td>
             <td class="p-4 text-center">
@@ -632,7 +700,7 @@
 
       const btn = document.querySelector('button[onclick="submitMultiBorrow()"]');
       const originalText = btn.innerText;
-      btn.innerText = "Processing...";
+      btn.innerText = "Processing Checkout...";
       btn.disabled = true;
       btn.classList.add('opacity-75');
 
@@ -724,7 +792,6 @@
                  <button onclick="handleReturn('${b.id}')" class="text-emerald-700 hover:text-white bg-emerald-100 hover:bg-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">Return</button>`
               : `<span class="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-1 rounded border border-slate-100">Login to manage</span>`;
 
-            // Overdue indicator
             const todayStr = new Date().toISOString().split('T')[0];
             const retIso = cleanToIsoDate(b.returnDate);
             const isOverdue = retIso < todayStr;
@@ -774,7 +841,7 @@
       e.preventDefault();
       const btn = document.querySelector('#stock-form button[type="submit"]');
       const originalText = btn.innerText;
-      btn.innerText = "Saving..."; btn.disabled = true; btn.classList.add('opacity-75');
+      btn.innerText = "Saving Update..."; btn.disabled = true; btn.classList.add('opacity-75');
 
       await sendPost({ action: "UPDATE_STOCK", itemId: document.getElementById('stock-item-select').value, type: document.getElementById('stock-type').value, location: document.getElementById('stock-location').value, qty: Number(document.getElementById('stock-qty').value), notes: document.getElementById('stock-notes').value });
       
