@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Makerspace @ UTHM - Inventory App</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
@@ -23,22 +22,22 @@
       right: 0; 
       bottom: 0;
       background-image: url('LogoMakerspace.jpg');
-      background-size: 50vmin; /* Keeps it reasonably sized in the center */
+      background-size: 60vmin; /* Slightly larger */
       background-position: center;
       background-repeat: no-repeat;
-      opacity: 0.04; /* Very faint so it is not intrusive */
-      z-index: -10;
+      opacity: 0.12; /* Increased visibility */
+      z-index: 0; /* Fixed layer stacking */
       pointer-events: none;
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 relative z-0">
+<body class="bg-slate-100 text-slate-800">
 
   <!-- Faint Logo Watermark -->
   <div class="bg-watermark"></div>
 
   <!-- Navigation Bar (Now Blue) -->
-  <nav class="bg-blue-900 text-white p-4 shadow-md border-b-4 border-amber-500">
+  <nav class="relative z-10 bg-blue-900 text-white p-4 shadow-md border-b-4 border-amber-500">
     <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center space-x-3">
         <img src="LogoMakerspace.jpg" alt="Makerspace @ UTHM Logo" class="h-14 rounded object-contain border border-blue-950 bg-blue-950">
@@ -59,11 +58,12 @@
     </div>
   </nav>
 
-  <div class="max-w-6xl mx-auto p-6 space-y-6">
+  <!-- Main Content Wrapper -->
+  <div class="relative z-10 max-w-6xl mx-auto p-6 space-y-6">
 
     <!-- TAB 1: DASHBOARD -->
     <div id="tab-dashboard" class="space-y-6">
-      <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-200 p-6">
+      <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-md border border-slate-200 p-6">
         <div class="flex justify-between items-center mb-6 border-b pb-3">
           <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wider">Inventory Availability Overview</h2>
           <span class="text-xs uppercase font-bold tracking-widest bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-200">Live Status</span>
@@ -91,7 +91,7 @@
 
     <!-- TAB 2: BORROW & RETURN -->
     <div id="tab-borrow" class="hidden space-y-6">
-      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
+      <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
         <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Check Out Equipment</h2>
         <form id="borrow-form" onsubmit="handleBorrowSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -124,7 +124,7 @@
         </form>
       </div>
 
-      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
+      <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
           <h2 class="text-xl font-bold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
           <p class="text-xs text-slate-500 font-medium">Click column headers to sort</p>
@@ -151,7 +151,7 @@
 
     <!-- TAB 3: UPDATE STOCK (+/-) -->
     <div id="tab-stock" class="hidden">
-      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 max-w-xl mx-auto">
+      <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 max-w-xl mx-auto">
         <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Add / Deduct Inventory</h2>
         <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-4">
           <div>
@@ -186,7 +186,7 @@
     </div>
 
     <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
-    <div id="tab-calendar" class="hidden bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
+    <div id="tab-calendar" class="hidden bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
       
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
         <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">14-Day Availability Matrix</h2>
