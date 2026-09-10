@@ -11,7 +11,7 @@
 
   <!-- Navigation -->
   <nav class="bg-slate-900 text-white p-4 shadow">
-    <div class="max-w-7xl mx-auto flex justify-between items-center">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-wide">Makerspace Inventory</h1>
       <div class="space-x-4">
         <button onclick="switchTab('dashboard')" class="hover:text-indigo-300 font-medium">Dashboard</button>
@@ -22,9 +22,9 @@
     </div>
   </nav>
 
-  <div class="max-w-7xl mx-auto p-6 space-y-6">
+  <div class="max-w-6xl mx-auto p-6 space-y-6">
 
-    <!-- TAB 1: DASHBOARD -->
+    <!-- TAB 1: REVERTED CLEAN DASHBOARD -->
     <div id="tab-dashboard" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
@@ -42,29 +42,28 @@
       </div>
 
       <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
-        <h2 class="text-lg font-bold mb-4">Inventory & Active Borrow Status Overview</h2>
+        <h2 class="text-lg font-bold mb-4">Inventory Availability Overview</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-100 border-b border-slate-200 text-sm">
                 <th class="p-3">Item Name</th>
                 <th class="p-3">Storage</th>
-                <th class="p-3">Display</th>
-                <th class="p-3">Borrowed</th>
+                <th class="p-3">Display / Demo</th>
+                <th class="p-3">Borrowed Out</th>
                 <th class="p-3">Total Owned</th>
-                <th class="p-3">Available</th>
-                <th class="p-3">Borrow Details (Borrow Date &rarr; Return Date)</th>
+                <th class="p-3">Currently Available</th>
               </tr>
             </thead>
-            <tbody id="inventory-table-body" class="divide-y divide-slate-200 text-sm">
-              <tr><td colspan="7" class="p-4 text-center text-slate-400">Loading data...</td></tr>
+            <tbody id="inventory-table-body" class="divide-y divide-slate-200">
+              <tr><td colspan="6" class="p-4 text-center text-slate-400">Loading data...</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- TAB 2: BORROW & RETURN -->
+    <!-- TAB 2: BORROW & RETURN (MAIN FOCUS) -->
     <div id="tab-borrow" class="hidden space-y-6">
       <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
         <h2 class="text-lg font-bold mb-4">Check Out Item</h2>
@@ -170,18 +169,24 @@
 
     let state = { items: [], borrows: [] };
 
-    // Strips out any time signature and returns standard YYYY-MM-DD
-    function cleanIsoDate(dateStr) {
-      if (!dateStr) return '';
-      if (typeof dateStr === 'string') {
-        return dateStr.split('T')[0].split(' ')[0];
+    // Function to parse Google Sheet date formats cleanly into YYYY-MM-DD string
+    function cleanToIsoDate(val) {
+      if (!val) return '';
+      if (typeof val === 'string') {
+        const firstPart = val.split('T')[0].split(' ')[0];
+        if (firstPart.includes('-')) return firstPart;
       }
-      return new Date(dateStr).toISOString().split('T')[0];
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
-    // Converts YYYY-MM-DD into DD/MM/YYYY format (No time)
-    function toDisplayDate(dateStr) {
-      const clean = cleanIsoDate(dateStr);
+    // Displays purely as DD/MM/YYYY (No time component)
+    function toDisplayDate(val) {
+      const clean = cleanToIsoDate(val);
       if (!clean) return '-';
       const parts = clean.split('-');
       if (parts.length === 3) {
@@ -190,12 +195,19 @@
       return clean;
     }
 
-    // Calculates number of days between two dates
-    function calculateDays(startDateStr, endDateStr) {
-      const start = new Date(cleanIsoDate(startDateStr));
-      const end = new Date(cleanIsoDate(endDateStr));
-      const diffTime = end - start;
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Calculates Duration in Days between Borrow and Return date
+    function calculateDurationDays(startVal, endVal) {
+      const startIso = cleanToIsoDate(startVal);
+      const endIso = cleanToIsoDate(endVal);
+
+      if (!startIso || !endIso) return 0;
+
+      const startDate = new Date(startIso + 'T00:00:00');
+      const endDate = new Date(endIso + 'T00:00:00');
+
+      const diffTime = endDate.getTime() - startDate.getTime();
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
       return diffDays >= 0 ? diffDays : 0;
     }
 
@@ -230,37 +242,20 @@
       stockSelect.innerHTML = '';
 
       if (state.items.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No items found in database.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items found in database.</td></tr>`;
       }
 
       state.items.forEach(item => {
-        const itemActiveBorrows = state.borrows
-          .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED");
+        const activeBorrowCount = state.borrows
+          .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
+          .reduce((sum, b) => sum + b.qty, 0);
 
-        const activeBorrowCount = itemActiveBorrows.reduce((sum, b) => sum + b.qty, 0);
         const totalOwned = item.storage + item.display;
         const available = totalOwned - activeBorrowCount;
 
         storageTot += item.storage;
         displayTot += item.display;
         borrowedTot += activeBorrowCount;
-
-        // Build active borrow date range summary tags with Duration (in days)
-        let borrowDatesHtml = '';
-        if (itemActiveBorrows.length === 0) {
-          borrowDatesHtml = `<span class="text-slate-400 italic">None</span>`;
-        } else {
-          borrowDatesHtml = itemActiveBorrows.map(b => {
-            const days = calculateDays(b.borrowDate, b.returnDate);
-            return `
-              <div class="inline-block bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs px-2.5 py-1 rounded my-1">
-                <span class="font-bold text-slate-900">${b.borrower} (${b.qty}x):</span> 
-                ${toDisplayDate(b.borrowDate)} &rarr; ${toDisplayDate(b.returnDate)} 
-                <span class="ml-1 px-1.5 py-0.5 rounded bg-indigo-200 text-indigo-900 font-bold">${days} ${days === 1 ? 'day' : 'days'}</span>
-              </div>
-            `;
-          }).join(' ');
-        }
 
         tableBody.innerHTML += `
           <tr>
@@ -270,11 +265,10 @@
             <td class="p-3 text-rose-600 font-semibold">${activeBorrowCount}</td>
             <td class="p-3 font-bold">${totalOwned}</td>
             <td class="p-3 font-bold ${available > 0 ? 'text-emerald-600' : 'text-rose-500'}">${available}</td>
-            <td class="p-3">${borrowDatesHtml}</td>
           </tr>
         `;
 
-        borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} total currently free)</option>`;
+        borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
         stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
 
@@ -292,17 +286,17 @@
       } else {
         activeBorrowsList.forEach(b => {
           const item = state.items.find(i => String(i.id) === String(b.itemId));
-          const days = calculateDays(b.borrowDate, b.returnDate);
+          const durationDays = calculateDurationDays(b.borrowDate, b.returnDate);
 
           borrowBody.innerHTML += `
             <tr>
               <td class="p-3 font-medium">${b.borrower}</td>
               <td class="p-3 text-slate-600 text-xs">${b.contact || '-'}</td>
               <td class="p-3">${item ? item.name : 'Unknown'}</td>
-              <td class="p-3">${b.qty}</td>
+              <td class="p-3 font-semibold">${b.qty}</td>
               <td class="p-3 font-medium text-indigo-900">${toDisplayDate(b.borrowDate)}</td>
               <td class="p-3 font-medium text-indigo-900">${toDisplayDate(b.returnDate)}</td>
-              <td class="p-3 font-bold text-slate-700">${days} ${days === 1 ? 'day' : 'days'}</td>
+              <td class="p-3 font-bold text-slate-700">${durationDays} ${durationDays === 1 ? 'day' : 'days'}</td>
               <td class="p-3">
                 <button onclick="handleReturn('${b.id}')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Return</button>
               </td>
@@ -317,13 +311,13 @@
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
 
       const totalOwned = targetItem.storage + targetItem.display;
-      const cleanReqStart = cleanIsoDate(reqStart);
-      const cleanReqEnd = cleanIsoDate(reqEnd);
+      const cleanReqStart = cleanToIsoDate(reqStart);
+      const cleanReqEnd = cleanToIsoDate(reqEnd);
 
       const overlappingBorrows = state.borrows.filter(b => {
         if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
-        const bStart = cleanIsoDate(b.borrowDate);
-        const bEnd = cleanIsoDate(b.returnDate);
+        const bStart = cleanToIsoDate(b.borrowDate);
+        const bEnd = cleanToIsoDate(b.returnDate);
         return (bStart <= cleanReqEnd && bEnd >= cleanReqStart);
       });
 
@@ -415,8 +409,8 @@
         const item = state.items.find(i => String(i.id) === String(b.itemId));
         return {
           title: `[${b.qty}x] ${item ? item.name : 'Item'} - ${b.borrower} (${b.contact})`,
-          start: cleanIsoDate(b.borrowDate),
-          end: cleanIsoDate(b.returnDate),
+          start: cleanToIsoDate(b.borrowDate),
+          end: cleanToIsoDate(b.returnDate),
           color: '#e11d48'
         };
       });
