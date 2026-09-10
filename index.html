@@ -24,7 +24,7 @@
 
   <div class="max-w-6xl mx-auto p-6 space-y-6">
 
-    <!-- TAB 1: REVERTED CLEAN DASHBOARD -->
+    <!-- TAB 1: CLEAN DASHBOARD -->
     <div id="tab-dashboard" class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
@@ -63,7 +63,7 @@
       </div>
     </div>
 
-    <!-- TAB 2: BORROW & RETURN (MAIN FOCUS) -->
+    <!-- TAB 2: BORROW & RETURN -->
     <div id="tab-borrow" class="hidden space-y-6">
       <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
         <h2 class="text-lg font-bold mb-4">Check Out Item</h2>
@@ -169,33 +169,38 @@
 
     let state = { items: [], borrows: [] };
 
-    // Function to parse Google Sheet date formats cleanly into YYYY-MM-DD string
+    // Universal Date Cleaning Engine
     function cleanToIsoDate(val) {
       if (!val) return '';
-      if (typeof val === 'string') {
-        const firstPart = val.split('T')[0].split(' ')[0];
-        if (firstPart.includes('-')) return firstPart;
-      }
+      let strVal = String(val).trim();
+      
+      // If it contains T or space, strip time
+      if (strVal.includes('T')) strVal = strVal.split('T')[0];
+      if (strVal.includes(' ')) strVal = strVal.split(' ')[0];
+
+      // Handle standard YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}$/.test(strVal)) return strVal;
+
+      // Handle JS Date parsing fallback
       const d = new Date(val);
-      if (isNaN(d.getTime())) return '';
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      if (!isNaN(d.getTime())) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      return '';
     }
 
-    // Displays purely as DD/MM/YYYY (No time component)
+    // Displays purely as DD/MM/YYYY
     function toDisplayDate(val) {
       const clean = cleanToIsoDate(val);
       if (!clean) return '-';
       const parts = clean.split('-');
-      if (parts.length === 3) {
-        return `${parts[2]}/${parts[1]}/${parts[0]}`;
-      }
-      return clean;
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
-    // Calculates Duration in Days between Borrow and Return date
+    // Calculates Duration in Days
     function calculateDurationDays(startVal, endVal) {
       const startIso = cleanToIsoDate(startVal);
       const endIso = cleanToIsoDate(endVal);
@@ -287,11 +292,12 @@
         activeBorrowsList.forEach(b => {
           const item = state.items.find(i => String(i.id) === String(b.itemId));
           const durationDays = calculateDurationDays(b.borrowDate, b.returnDate);
+          const contactDisplay = (b.contact !== undefined && b.contact !== null && String(b.contact).trim() !== '') ? String(b.contact) : '-';
 
           borrowBody.innerHTML += `
             <tr>
               <td class="p-3 font-medium">${b.borrower}</td>
-              <td class="p-3 text-slate-600 text-xs">${b.contact || '-'}</td>
+              <td class="p-3 text-slate-700 font-mono text-xs">${contactDisplay}</td>
               <td class="p-3">${item ? item.name : 'Unknown'}</td>
               <td class="p-3 font-semibold">${b.qty}</td>
               <td class="p-3 font-medium text-indigo-900">${toDisplayDate(b.borrowDate)}</td>
