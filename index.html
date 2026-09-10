@@ -10,35 +10,28 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Space Grotesk', system-ui, sans-serif; }
-    /* Hide scrollbar for the heatmap */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    
-    /* Logo Watermark Background */
     .bg-watermark {
       position: fixed;
-      top: 0; 
-      left: 0; 
-      right: 0; 
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       background-image: url('LogoMakerspace.jpg');
-      background-size: 60vmin; /* Slightly larger */
+      background-size: 60vmin;
       background-position: center;
       background-repeat: no-repeat;
-      opacity: 0.12; /* Increased visibility */
-      z-index: 0; /* Fixed layer stacking */
+      opacity: 0.12;
+      z-index: 0;
       pointer-events: none;
     }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
 
-  <!-- Faint Logo Watermark -->
   <div class="bg-watermark"></div>
 
-  <!-- Navigation Bar (Now Blue) -->
+  <!-- Navigation Bar -->
   <nav class="relative z-10 bg-blue-900 text-white p-4 shadow-md border-b-4 border-amber-500">
-    <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+    <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center space-x-3">
         <img src="LogoMakerspace.jpg" alt="Makerspace @ UTHM Logo" class="h-14 rounded object-contain border border-blue-950 bg-blue-950">
         <div>
@@ -49,16 +42,22 @@
         </div>
       </div>
       
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-700 text-white transition border-b-2 border-amber-400">Dashboard</button>
-        <button onclick="switchTab('borrow')" id="nav-borrow" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Borrow / Return</button>
-        <button onclick="switchTab('stock')" id="nav-stock" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Update Stock</button>
         <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Availability Map</button>
+        
+        <!-- Hidden from public by default -->
+        <button onclick="switchTab('borrow')" id="nav-borrow" class="hidden px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Borrow / Return</button>
+        <button onclick="switchTab('stock')" id="nav-stock" class="hidden px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Update Stock</button>
+        
+        <!-- Auth Button -->
+        <button onclick="toggleAuth()" id="btn-auth" class="ml-4 px-3 py-1.5 rounded-full font-bold text-xs uppercase tracking-wider bg-slate-800 hover:bg-black text-amber-400 border border-amber-500 transition shadow">
+          Admin Login
+        </button>
       </div>
     </div>
   </nav>
 
-  <!-- Main Content Wrapper -->
   <div class="relative z-10 max-w-6xl mx-auto p-6 space-y-6">
 
     <!-- TAB 1: DASHBOARD -->
@@ -89,7 +88,7 @@
       </div>
     </div>
 
-    <!-- TAB 2: BORROW & RETURN -->
+    <!-- TAB 2: BORROW & RETURN (ADMIN ONLY) -->
     <div id="tab-borrow" class="hidden space-y-6">
       <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
         <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Check Out Equipment</h2>
@@ -149,7 +148,7 @@
       </div>
     </div>
 
-    <!-- TAB 3: UPDATE STOCK (+/-) -->
+    <!-- TAB 3: UPDATE STOCK (ADMIN ONLY) -->
     <div id="tab-stock" class="hidden">
       <div class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 max-w-xl mx-auto">
         <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Add / Deduct Inventory</h2>
@@ -187,21 +186,15 @@
 
     <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
     <div id="tab-calendar" class="hidden bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
-      
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
         <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">14-Day Availability Matrix</h2>
-        
-        <!-- Heatmap Legend -->
         <div class="flex space-x-4 text-xs font-bold uppercase tracking-wider border border-slate-200 p-2 rounded-lg bg-slate-50">
           <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded bg-emerald-400"></div><span>Available</span></div>
           <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded bg-amber-400"></div><span>Low Stock</span></div>
           <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded bg-rose-500"></div><span>Zero Stock</span></div>
         </div>
       </div>
-
-      <!-- The Grid gets rendered here -->
       <div id="heatmap-container" class="w-full"></div>
-
     </div>
 
   </div>
@@ -213,14 +206,55 @@
     let sortColumn = 'borrower';
     let sortAscending = true;
     let editingBorrowId = null;
+    
+    // Auth State
+    let adminPin = sessionStorage.getItem('adminPin');
+    let isAdmin = !!adminPin;
+    updateAuthUI();
+
+    function toggleAuth() {
+      if (isAdmin) {
+        sessionStorage.removeItem('adminPin');
+        adminPin = null;
+        isAdmin = false;
+        switchTab('dashboard'); // Kick back to public view
+      } else {
+        const pin = prompt("Enter Admin PIN:");
+        if (pin) {
+          sessionStorage.setItem('adminPin', pin);
+          adminPin = pin;
+          isAdmin = true;
+        }
+      }
+      updateAuthUI();
+      render(); // Re-render tables to hide/show action buttons
+    }
+
+    function updateAuthUI() {
+      const btn = document.getElementById('btn-auth');
+      const navBorrow = document.getElementById('nav-borrow');
+      const navStock = document.getElementById('nav-stock');
+      
+      if (isAdmin) {
+        btn.innerText = "Logout Admin";
+        btn.classList.replace('bg-slate-800', 'bg-rose-700');
+        btn.classList.replace('text-amber-400', 'text-white');
+        navBorrow.classList.remove('hidden');
+        navStock.classList.remove('hidden');
+      } else {
+        btn.innerText = "Admin Login";
+        btn.classList.replace('bg-rose-700', 'bg-slate-800');
+        btn.classList.replace('text-white', 'text-amber-400');
+        navBorrow.classList.add('hidden');
+        navStock.classList.add('hidden');
+      }
+    }
 
     function cleanToIsoDate(val) {
       if (!val) return '';
       let str = String(val).trim().replace(/['\s]/g, '');
       if (str.includes('T')) str = str.split('T')[0];
-      if (/^\d{8}$/.test(str)) {
-        return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
-      }
+      if (/^\d{8}$/.test(str)) return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
       if (str.includes('/')) {
         const p = str.split('/');
@@ -230,12 +264,7 @@
         }
       }
       const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      }
+      if (!isNaN(d.getTime())) return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       return '';
     }
 
@@ -285,7 +314,6 @@
     function render() {
       const tableBody = document.getElementById('inventory-table-body');
       tableBody.innerHTML = '';
-
       const borrowSelect = document.getElementById('borrow-item-select');
       const stockSelect = document.getElementById('stock-item-select');
       borrowSelect.innerHTML = '';
@@ -306,13 +334,8 @@
 
         let barColor = 'bg-emerald-500';
         let badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-300';
-        if (pct < 20) {
-          barColor = 'bg-rose-500';
-          badgeBg = 'bg-rose-100 text-rose-800 border-rose-300';
-        } else if (pct <= 50) {
-          barColor = 'bg-amber-500';
-          badgeBg = 'bg-amber-100 text-amber-800 border-amber-300';
-        }
+        if (pct < 20) { barColor = 'bg-rose-500'; badgeBg = 'bg-rose-100 text-rose-800 border-rose-300'; } 
+        else if (pct <= 50) { barColor = 'bg-amber-500'; badgeBg = 'bg-amber-100 text-amber-800 border-amber-300'; }
 
         tableBody.innerHTML += `
           <tr class="hover:bg-slate-50 transition border-b border-slate-200">
@@ -334,21 +357,15 @@
             </td>
           </tr>
         `;
-
         borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
         stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
-
       renderBorrowsTable();
     }
 
     function sortTable(columnKey) {
-      if (sortColumn === columnKey) {
-        sortAscending = !sortAscending;
-      } else {
-        sortColumn = columnKey;
-        sortAscending = true;
-      }
+      if (sortColumn === columnKey) { sortAscending = !sortAscending; } 
+      else { sortColumn = columnKey; sortAscending = true; }
       renderBorrowsTable();
     }
 
@@ -360,7 +377,6 @@
       activeBorrowsList.sort((a, b) => {
         const itemA = state.items.find(i => String(i.id) === String(a.itemId))?.name || '';
         const itemB = state.items.find(i => String(i.id) === String(b.itemId))?.name || '';
-
         let valA, valB;
         if (sortColumn === 'borrower') { valA = a.borrower.toLowerCase(); valB = b.borrower.toLowerCase(); }
         else if (sortColumn === 'contact') { valA = a.contact; valB = b.contact; }
@@ -369,7 +385,6 @@
         else if (sortColumn === 'borrowDate') { valA = cleanToIsoDate(a.borrowDate); valB = cleanToIsoDate(b.borrowDate); }
         else if (sortColumn === 'returnDate') { valA = cleanToIsoDate(a.returnDate); valB = cleanToIsoDate(b.returnDate); }
         else if (sortColumn === 'duration') { valA = calculateDays(a.borrowDate, a.returnDate); valB = calculateDays(b.borrowDate, b.returnDate); }
-
         if (valA < valB) return sortAscending ? -1 : 1;
         if (valA > valB) return sortAscending ? 1 : -1;
         return 0;
@@ -384,7 +399,7 @@
           let cleanContact = String(b.contact || '').replace(/^'/, '').trim();
           const isEditing = editingBorrowId === b.id;
 
-          if (isEditing) {
+          if (isEditing && isAdmin) {
             borrowBody.innerHTML += `
               <tr class="bg-amber-50 border-2 border-amber-300">
                 <td class="p-2"><input type="text" id="edit-name-${b.id}" value="${b.borrower}" class="border border-slate-300 p-1.5 rounded text-xs w-full font-medium"></td>
@@ -401,19 +416,21 @@
               </tr>
             `;
           } else {
+            let actionButtons = isAdmin 
+              ? `<button onclick="startInlineEdit('${b.id}')" class="bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-1 rounded-md text-xs font-bold hover:bg-amber-200 transition">Edit</button>
+                 <button onclick="handleReturn('${b.id}')" class="bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-1 rounded-md text-xs font-bold hover:bg-emerald-200 transition">Return</button>`
+              : `<span class="text-xs text-slate-400 italic">Login to edit</span>`;
+
             borrowBody.innerHTML += `
               <tr class="hover:bg-slate-50 transition">
                 <td class="p-3 font-semibold text-slate-900">${b.borrower}</td>
-                <td class="p-3 font-mono text-xs text-slate-600">${cleanContact || '-'}</td>
+                <td class="p-3 font-mono text-xs text-slate-600">${isAdmin ? (cleanContact || '-') : '*** (Hidden)'}</td>
                 <td class="p-3">${item ? item.name : 'Unknown'}</td>
                 <td class="p-3 font-mono font-semibold">${b.qty}</td>
                 <td class="p-3 font-mono text-blue-900 font-medium">${toDisplayDate(b.borrowDate)}</td>
                 <td class="p-3 font-mono text-blue-900 font-medium">${toDisplayDate(b.returnDate)}</td>
                 <td class="p-3 font-bold text-slate-700">${durationDays} ${durationDays === 1 ? 'day' : 'days'}</td>
-                <td class="p-3 flex items-center space-x-2">
-                  <button onclick="startInlineEdit('${b.id}')" class="bg-amber-100 border border-amber-300 text-amber-800 px-2.5 py-1 rounded-md text-xs font-bold hover:bg-amber-200 transition">Edit</button>
-                  <button onclick="handleReturn('${b.id}')" class="bg-emerald-100 border border-emerald-300 text-emerald-800 px-2.5 py-1 rounded-md text-xs font-bold hover:bg-emerald-200 transition">Return</button>
-                </td>
+                <td class="p-3 flex items-center space-x-2">${actionButtons}</td>
               </tr>
             `;
           }
@@ -421,15 +438,8 @@
       }
     }
 
-    function startInlineEdit(borrowId) {
-      editingBorrowId = borrowId;
-      renderBorrowsTable();
-    }
-
-    function cancelInlineEdit() {
-      editingBorrowId = null;
-      renderBorrowsTable();
-    }
+    function startInlineEdit(borrowId) { editingBorrowId = borrowId; renderBorrowsTable(); }
+    function cancelInlineEdit() { editingBorrowId = null; renderBorrowsTable(); }
 
     async function saveInlineEdit(borrowId) {
       const borrower = document.getElementById(`edit-name-${borrowId}`).value;
@@ -438,81 +448,40 @@
       const borrowDate = document.getElementById(`edit-bdate-${borrowId}`).value;
       const returnDate = document.getElementById(`edit-rdate-${borrowId}`).value;
 
-      if (!borrower || !contact || !borrowDate || !returnDate) {
-        alert("All fields are required.");
-        return;
-      }
+      if (!borrower || !contact || !borrowDate || !returnDate) { alert("All fields are required."); return; }
 
-      const payload = {
-        action: "EDIT_BORROW",
-        borrowId: borrowId,
-        borrower: borrower,
-        contact: contact,
-        qty: qty,
-        borrowDate: borrowDate,
-        returnDate: returnDate
-      };
-
+      await sendPost({ action: "EDIT_BORROW", borrowId: borrowId, borrower: borrower, contact: contact, qty: qty, borrowDate: borrowDate, returnDate: returnDate });
       editingBorrowId = null;
-      await sendPost(payload);
     }
 
     function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
-
       const totalOwned = targetItem.storage + targetItem.display;
       const cleanReqStart = cleanToIsoDate(reqStart);
       const cleanReqEnd = cleanToIsoDate(reqEnd);
 
       const overlappingBorrows = state.borrows.filter(b => {
         if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
-        const bStart = cleanToIsoDate(b.borrowDate);
-        const bEnd = cleanToIsoDate(b.returnDate);
-        return (bStart <= cleanReqEnd && bEnd >= cleanReqStart);
+        return (cleanToIsoDate(b.borrowDate) <= cleanReqEnd && cleanToIsoDate(b.returnDate) >= cleanReqStart);
       });
-
       const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
       const availableForDates = totalOwned - maxReservedQty;
-
-      return {
-        isAvailable: availableForDates >= requestedQty,
-        availableQty: availableForDates,
-        totalOwned: totalOwned
-      };
+      return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
     }
 
     async function handleBorrowSubmit(e) {
       e.preventDefault();
-      
       const itemId = document.getElementById('borrow-item-select').value;
       const qty = Number(document.getElementById('borrow-qty').value);
       const borrowDate = document.getElementById('borrow-date').value;
       const returnDate = document.getElementById('return-date').value;
 
-      if (returnDate < borrowDate) {
-        alert("Return date cannot be earlier than the borrow date.");
-        return;
-      }
-
+      if (returnDate < borrowDate) { alert("Return date cannot be earlier than the borrow date."); return; }
       const check = checkAvailabilityForDates(itemId, qty, borrowDate, returnDate);
+      if (!check.isAvailable) { alert(`Cannot approve borrow request!\n\nFor the selected date range, only ${check.availableQty} unit(s) are available.`); return; }
 
-      if (!check.isAvailable) {
-        alert(`Cannot approve borrow request!\n\nFor the selected date range (${toDisplayDate(borrowDate)} to ${toDisplayDate(returnDate)}), only ${check.availableQty} unit(s) are available due to existing active borrows.\nRequested: ${qty}`);
-        return;
-      }
-
-      const payload = {
-        action: "ADD_BORROW",
-        itemId: itemId,
-        borrower: document.getElementById('borrower-name').value,
-        contact: document.getElementById('borrower-contact').value,
-        qty: qty,
-        borrowDate: borrowDate,
-        returnDate: returnDate
-      };
-
-      await sendPost(payload);
+      await sendPost({ action: "ADD_BORROW", itemId: itemId, borrower: document.getElementById('borrower-name').value, contact: document.getElementById('borrower-contact').value, qty: qty, borrowDate: borrowDate, returnDate: returnDate });
       document.getElementById('borrow-form').reset();
       document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
     }
@@ -524,19 +493,15 @@
 
     async function handleStockSubmit(e) {
       e.preventDefault();
-      const payload = {
-        action: "UPDATE_STOCK",
-        itemId: document.getElementById('stock-item-select').value,
-        type: document.getElementById('stock-type').value,
-        location: document.getElementById('stock-location').value,
-        qty: Number(document.getElementById('stock-qty').value),
-        notes: document.getElementById('stock-notes').value
-      };
-      await sendPost(payload);
+      await sendPost({ action: "UPDATE_STOCK", itemId: document.getElementById('stock-item-select').value, type: document.getElementById('stock-type').value, location: document.getElementById('stock-location').value, qty: Number(document.getElementById('stock-qty').value), notes: document.getElementById('stock-notes').value });
       document.getElementById('stock-form').reset();
     }
 
     async function sendPost(payload) {
+      if(!isAdmin) { alert("You must be logged in as Admin to perform this action."); return; }
+      
+      payload.pin = adminPin; // Attach the secret PIN to every post request
+      
       try {
         const bodyParams = new URLSearchParams(payload);
         await fetch(API_URL, {
@@ -556,11 +521,7 @@
     function renderHeatmap() {
       const container = document.getElementById('heatmap-container');
       container.innerHTML = '';
-
-      if (state.items.length === 0) {
-        container.innerHTML = '<p class="text-slate-500 text-center py-6">No inventory available to map.</p>';
-        return;
-      }
+      if (state.items.length === 0) { container.innerHTML = '<p class="text-slate-500 text-center py-6">No inventory available to map.</p>'; return; }
 
       const dates = [];
       const today = new Date();
@@ -574,65 +535,38 @@
 
       let html = `<div class="overflow-x-auto no-scrollbar border border-slate-200 rounded-lg">
         <table class="w-full text-center border-collapse">
-          <thead>
-            <tr class="bg-slate-900 text-white text-xs uppercase tracking-wider">
-              <th class="p-3 text-left sticky left-0 bg-slate-900 z-10 w-48 shadow-[1px_0_0_rgba(0,0,0,1)]">Equipment Item</th>`;
-      
-      dates.forEach(d => {
-        html += `<th class="p-2 min-w-[70px] border-l border-slate-700">
-          <div class="text-[10px] text-slate-400 font-bold mb-0.5">${dayNames[d.getDay()]}</div>
-          <div class="font-mono text-sm">${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div>
-        </th>`;
-      });
+          <thead><tr class="bg-slate-900 text-white text-xs uppercase tracking-wider"><th class="p-3 text-left sticky left-0 bg-slate-900 z-10 w-48 shadow-[1px_0_0_rgba(0,0,0,1)]">Equipment Item</th>`;
+      dates.forEach(d => { html += `<th class="p-2 min-w-[70px] border-l border-slate-700"><div class="text-[10px] text-slate-400 font-bold mb-0.5">${dayNames[d.getDay()]}</div><div class="font-mono text-sm">${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</div></th>`; });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
 
       state.items.forEach(item => {
         const totalOwned = item.storage + item.display;
-        
-        html += `<tr class="hover:bg-slate-50 transition">
-          <td class="p-3 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[1px_0_5px_rgba(0,0,0,0.1)] z-10">
-            ${item.name}
-            <div class="text-[10px] text-slate-500 font-mono mt-0.5">Total Owned: ${totalOwned}</div>
-          </td>`;
+        html += `<tr class="hover:bg-slate-50 transition"><td class="p-3 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[1px_0_5px_rgba(0,0,0,0.1)] z-10">${item.name}<div class="text-[10px] text-slate-500 font-mono mt-0.5">Total Owned: ${totalOwned}</div></td>`;
         
         dates.forEach(d => {
           const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          
           const usedQty = state.borrows.reduce((sum, b) => {
             if (String(b.itemId) === String(item.id) && b.status === "BORROWED") {
-              const bStart = cleanToIsoDate(b.borrowDate);
-              const bEnd = cleanToIsoDate(b.returnDate);
-              if (dateStr >= bStart && dateStr <= bEnd) return sum + b.qty;
+              if (dateStr >= cleanToIsoDate(b.borrowDate) && dateStr <= cleanToIsoDate(b.returnDate)) return sum + b.qty;
             }
             return sum;
           }, 0);
 
           const available = totalOwned - usedQty;
-          
           let bgColor = 'bg-emerald-100 text-emerald-800 border-emerald-200'; 
-          if (totalOwned === 0) {
-            bgColor = 'bg-slate-100 text-slate-400 border-slate-200';
-          } else if (available === 0) {
-            bgColor = 'bg-rose-500 text-white border-rose-600 font-bold'; 
-          } else if (available < totalOwned * 0.5) {
-            bgColor = 'bg-amber-300 text-amber-900 border-amber-400'; 
-          }
+          if (totalOwned === 0) bgColor = 'bg-slate-100 text-slate-400 border-slate-200';
+          else if (available === 0) bgColor = 'bg-rose-500 text-white border-rose-600 font-bold'; 
+          else if (available < totalOwned * 0.5) bgColor = 'bg-amber-300 text-amber-900 border-amber-400'; 
 
-          html += `<td class="p-1.5 border-l border-slate-100">
-            <div class="w-full h-10 flex items-center justify-center rounded-md border ${bgColor} font-mono text-sm shadow-sm transition">
-              ${totalOwned === 0 ? '-' : available}
-            </div>
-          </td>`;
+          html += `<td class="p-1.5 border-l border-slate-100"><div class="w-full h-10 flex items-center justify-center rounded-md border ${bgColor} font-mono text-sm shadow-sm transition">${totalOwned === 0 ? '-' : available}</div></td>`;
         });
-        
         html += `</tr>`;
       });
-
       html += `</tbody></table></div>`;
       container.innerHTML = html;
     }
 
-    document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
+    if(document.getElementById('borrow-date')) document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
     fetchData();
   </script>
 </body>
