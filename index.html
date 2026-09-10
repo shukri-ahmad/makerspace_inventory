@@ -11,10 +11,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Space Grotesk', system-ui, sans-serif; }
-    .bg-uthm-navy { background-color: #1e3a8a; }
-    .bg-uthm-blue { background-color: #2563eb; }
-    .text-uthm-gold { color: #f59e0b; }
-    .border-uthm-gold { border-color: #f59e0b; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800">
@@ -24,7 +20,7 @@
     <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <!-- Logo + Title Header -->
       <div class="flex items-center space-x-3">
-        <img src="logo.jpg" alt="Makerspace @ UTHM Logo" class="h-12 rounded object-contain border border-slate-700" onerror="this.style.display='none'">
+        <img src="LogoMakerspace.jpg" alt="Makerspace @ UTHM Logo" class="h-14 rounded object-contain border border-slate-700 bg-black">
         <div>
           <h1 class="text-xl font-bold tracking-wider uppercase text-white flex items-center gap-1">
             Makerspace <span class="text-amber-400 font-sans italic text-lg">@UTHM</span>
@@ -35,7 +31,7 @@
       
       <!-- Navigation Tabs -->
       <div class="flex flex-wrap gap-2">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider bg-blue-900 text-white transition">Dashboard</button>
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400">Dashboard</button>
         <button onclick="switchTab('borrow')" id="nav-borrow" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Borrow / Return</button>
         <button onclick="switchTab('stock')" id="nav-stock" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Update Stock</button>
         <button onclick="switchTab('calendar')" id="nav-calendar" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Calendar</button>
