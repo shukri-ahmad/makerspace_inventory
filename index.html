@@ -78,7 +78,7 @@
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Contact Number <span class="text-rose-500">*</span></label>
-            <input type="tel" id="borrower-contact" placeholder="e.g. +60123456789" required class="w-full border p-2 rounded bg-slate-50">
+            <input type="tel" id="borrower-contact" placeholder="e.g. 0123456789" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
             <label class="block text-sm font-medium mb-1">Quantity <span class="text-rose-500">*</span></label>
@@ -169,24 +169,18 @@
 
     let state = { items: [], borrows: [] };
 
-    // Explicitly parses YYYYMMDD (8 digits), YYYY-MM-DD, or ISO strings into YYYY-MM-DD
+    // Standardizes raw string input to YYYY-MM-DD
     function cleanToIsoDate(val) {
       if (!val) return '';
       let str = String(val).trim().replace(/['\s]/g, '');
       if (str.includes('T')) str = str.split('T')[0];
 
-      // Handle raw 8-digit YYYYMMDD string (e.g. 20260910)
       if (/^\d{8}$/.test(str)) {
-        const y = str.substring(0, 4);
-        const m = str.substring(4, 6);
-        const d = str.substring(6, 8);
-        return `${y}-${m}-${d}`;
+        return `${str.substring(0,4)}-${str.substring(4,6)}-${str.substring(6,8)}`;
       }
 
-      // Handle YYYY-MM-DD
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
-      // Handle DD/MM/YYYY or MM/DD/YYYY
       if (str.includes('/')) {
         const p = str.split('/');
         if (p.length === 3) {
@@ -195,17 +189,17 @@
         }
       }
 
-      const dateObj = new Date(val);
-      if (!isNaN(dateObj.getTime())) {
-        const y = dateObj.getFullYear();
-        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const d = String(dateObj.getDate()).padStart(2, '0');
-        return `${y}-${m}-${d}`;
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
       }
       return '';
     }
 
-    // Displays purely as DD/MM/YYYY
+    // Displays strictly DD/MM/YYYY
     function toDisplayDate(val) {
       const iso = cleanToIsoDate(val);
       if (!iso) return '-';
@@ -402,16 +396,18 @@
       document.getElementById('stock-form').reset();
     }
 
+    // Uses URLSearchParams to avoid CORS payload stripping
     async function sendPost(payload) {
       try {
+        const bodyParams = new URLSearchParams(payload);
         await fetch(API_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: { "Content-Type": "text/plain" },
-          body: JSON.stringify(payload),
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: bodyParams,
           redirect: "follow"
         });
-        setTimeout(fetchData, 1000);
+        setTimeout(fetchData, 1200);
       } catch (e) {
         console.error("Post Error:", e);
         alert("Failed to save changes.");
