@@ -5,36 +5,56 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Makerspace @ UTHM - Inventory App</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Space Grotesk', system-ui, sans-serif; }
-    /* Hide scrollbar for the heatmap for a cleaner look */
+    /* Hide scrollbar for the heatmap */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Logo Watermark Background */
+    .bg-watermark {
+      position: fixed;
+      top: 0; 
+      left: 0; 
+      right: 0; 
+      bottom: 0;
+      background-image: url('LogoMakerspace.jpg');
+      background-size: 50vmin; /* Keeps it reasonably sized in the center */
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.04; /* Very faint so it is not intrusive */
+      z-index: -10;
+      pointer-events: none;
+    }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800">
+<body class="bg-slate-100 text-slate-800 relative z-0">
 
-  <!-- Navigation Bar -->
-  <nav class="bg-black text-white p-4 shadow-md border-b-4 border-amber-500">
+  <!-- Faint Logo Watermark -->
+  <div class="bg-watermark"></div>
+
+  <!-- Navigation Bar (Now Blue) -->
+  <nav class="bg-blue-900 text-white p-4 shadow-md border-b-4 border-amber-500">
     <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
       <div class="flex items-center space-x-3">
-        <img src="LogoMakerspace.jpg" alt="Makerspace @ UTHM Logo" class="h-14 rounded object-contain border border-slate-700 bg-black">
+        <img src="LogoMakerspace.jpg" alt="Makerspace @ UTHM Logo" class="h-14 rounded object-contain border border-blue-950 bg-blue-950">
         <div>
           <h1 class="text-2xl font-extrabold tracking-wider uppercase text-white flex items-center gap-1">
             Makerspace <span class="text-amber-400 font-sans italic text-xl">@UTHM</span>
           </h1>
-          <p class="text-xs text-slate-400 font-normal tracking-wide">Inventory & Equipment Management</p>
+          <p class="text-xs text-blue-200 font-normal tracking-wide">Inventory & Equipment Management</p>
         </div>
       </div>
       
       <div class="flex flex-wrap gap-2">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400">Dashboard</button>
-        <button onclick="switchTab('borrow')" id="nav-borrow" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Borrow / Return</button>
-        <button onclick="switchTab('stock')" id="nav-stock" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Update Stock</button>
-        <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Availability Map</button>
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-700 text-white transition border-b-2 border-amber-400">Dashboard</button>
+        <button onclick="switchTab('borrow')" id="nav-borrow" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Borrow / Return</button>
+        <button onclick="switchTab('stock')" id="nav-stock" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Update Stock</button>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition">Availability Map</button>
       </div>
     </div>
   </nav>
@@ -43,10 +63,10 @@
 
     <!-- TAB 1: DASHBOARD -->
     <div id="tab-dashboard" class="space-y-6">
-      <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+      <div class="bg-white/95 backdrop-blur-sm rounded-xl shadow-md border border-slate-200 p-6">
         <div class="flex justify-between items-center mb-6 border-b pb-3">
           <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wider">Inventory Availability Overview</h2>
-          <span class="text-xs uppercase font-bold tracking-widest bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-300">Live Status</span>
+          <span class="text-xs uppercase font-bold tracking-widest bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-200">Live Status</span>
         </div>
         
         <div class="overflow-x-auto">
@@ -71,7 +91,7 @@
 
     <!-- TAB 2: BORROW & RETURN -->
     <div id="tab-borrow" class="hidden space-y-6">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
         <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Check Out Equipment</h2>
         <form id="borrow-form" onsubmit="handleBorrowSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -99,12 +119,12 @@
             <input type="date" id="return-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div class="md:col-span-2 mt-2">
-            <button type="submit" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-black transition uppercase tracking-wider text-base shadow">Confirm Check-out</button>
+            <button type="submit" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-950 transition uppercase tracking-wider text-base shadow">Confirm Check-out</button>
           </div>
         </form>
       </div>
 
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
           <h2 class="text-xl font-bold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
           <p class="text-xs text-slate-500 font-medium">Click column headers to sort</p>
@@ -131,7 +151,7 @@
 
     <!-- TAB 3: UPDATE STOCK (+/-) -->
     <div id="tab-stock" class="hidden">
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-xl mx-auto">
+      <div class="bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200 max-w-xl mx-auto">
         <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Add / Deduct Inventory</h2>
         <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-4">
           <div>
@@ -160,13 +180,13 @@
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Reason / Notes</label>
             <input type="text" id="stock-notes" placeholder="e.g. Purchased 2 new units" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
-          <button type="submit" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition uppercase tracking-wider text-base shadow">Update Stock Level</button>
+          <button type="submit" class="w-full bg-blue-900 text-white py-3 rounded-lg font-bold hover:bg-blue-950 transition uppercase tracking-wider text-base shadow">Update Stock Level</button>
         </form>
       </div>
     </div>
 
     <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
-    <div id="tab-calendar" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+    <div id="tab-calendar" class="hidden bg-white/95 backdrop-blur-sm p-6 rounded-xl shadow-sm border border-slate-200">
       
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4">
         <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">14-Day Availability Matrix</h2>
@@ -194,7 +214,6 @@
     let sortAscending = true;
     let editingBorrowId = null;
 
-    // Standardizes dates cleanly to YYYY-MM-DD
     function cleanToIsoDate(val) {
       if (!val) return '';
       let str = String(val).trim().replace(/['\s]/g, '');
@@ -220,7 +239,6 @@
       return '';
     }
 
-    // Displays strictly as DD/MM/YYYY
     function toDisplayDate(val) {
       if (!val) return '-';
       let str = String(val).trim().replace(/['\s]/g, '');
@@ -256,10 +274,10 @@
     function switchTab(tabName) {
       ['dashboard', 'borrow', 'stock', 'calendar'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
-        document.getElementById(`nav-${t}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition";
+        document.getElementById(`nav-${t}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition";
       });
       document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-      document.getElementById(`nav-${tabName}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400";
+      document.getElementById(`nav-${tabName}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-700 text-white transition border-b-2 border-amber-400";
       
       if(tabName === 'calendar') renderHeatmap();
     }
@@ -535,7 +553,6 @@
       }
     }
 
-    // Custom 14-Day Heatmap Logic
     function renderHeatmap() {
       const container = document.getElementById('heatmap-container');
       container.innerHTML = '';
@@ -545,7 +562,6 @@
         return;
       }
 
-      // Generate dates for the next 14 days
       const dates = [];
       const today = new Date();
       today.setHours(0,0,0,0);
@@ -556,14 +572,12 @@
       }
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-      // Build Table Wrapper
       let html = `<div class="overflow-x-auto no-scrollbar border border-slate-200 rounded-lg">
         <table class="w-full text-center border-collapse">
           <thead>
             <tr class="bg-slate-900 text-white text-xs uppercase tracking-wider">
               <th class="p-3 text-left sticky left-0 bg-slate-900 z-10 w-48 shadow-[1px_0_0_rgba(0,0,0,1)]">Equipment Item</th>`;
       
-      // Date Headers
       dates.forEach(d => {
         html += `<th class="p-2 min-w-[70px] border-l border-slate-700">
           <div class="text-[10px] text-slate-400 font-bold mb-0.5">${dayNames[d.getDay()]}</div>
@@ -572,7 +586,6 @@
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
 
-      // Item Rows
       state.items.forEach(item => {
         const totalOwned = item.storage + item.display;
         
@@ -582,7 +595,6 @@
             <div class="text-[10px] text-slate-500 font-mono mt-0.5">Total Owned: ${totalOwned}</div>
           </td>`;
         
-        // Date Cells for the Item
         dates.forEach(d => {
           const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
           
