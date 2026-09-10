@@ -69,27 +69,27 @@
         <h2 class="text-lg font-bold mb-4">Check Out Item</h2>
         <form id="borrow-form" onsubmit="handleBorrowSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium mb-1">Select Item</label>
+            <label class="block text-sm font-medium mb-1">Select Item <span class="text-rose-500">*</span></label>
             <select id="borrow-item-select" required class="w-full border p-2 rounded bg-slate-50"></select>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Borrower Name</label>
+            <label class="block text-sm font-medium mb-1">Borrower Name <span class="text-rose-500">*</span></label>
             <input type="text" id="borrower-name" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Contact Number</label>
+            <label class="block text-sm font-medium mb-1">Contact Number <span class="text-rose-500">*</span></label>
             <input type="tel" id="borrower-contact" placeholder="e.g. +60123456789" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Quantity</label>
+            <label class="block text-sm font-medium mb-1">Quantity <span class="text-rose-500">*</span></label>
             <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Borrow Date</label>
+            <label class="block text-sm font-medium mb-1">Borrow Date (DD/MM/YYYY) <span class="text-rose-500">*</span></label>
             <input type="date" id="borrow-date" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Expected Return Date</label>
+            <label class="block text-sm font-medium mb-1">Expected Return Date (DD/MM/YYYY) <span class="text-rose-500">*</span></label>
             <input type="date" id="return-date" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div class="md:col-span-2">
@@ -108,8 +108,8 @@
                 <th class="p-3">Contact</th>
                 <th class="p-3">Item</th>
                 <th class="p-3">Qty</th>
-                <th class="p-3">Borrow Date</th>
-                <th class="p-3">Return Date</th>
+                <th class="p-3">Borrow Date (DD/MM/YYYY)</th>
+                <th class="p-3">Return Date (DD/MM/YYYY)</th>
                 <th class="p-3">Action</th>
               </tr>
             </thead>
@@ -167,6 +167,17 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbzNP0qE3sK92Sv_QZ3HMP-VXZX-bNrPxqCvid2Y8AZmjyeabOdDdgQDzOBVv5Dd55f13g/exec";
 
     let state = { items: [], borrows: [] };
+
+    // Helper: Converts YYYY-MM-DD or ISO string to DD/MM/YYYY
+    function toDisplayDate(dateStr) {
+      if (!dateStr) return '-';
+      const cleanDate = dateStr.split('T')[0];
+      const parts = cleanDate.split('-');
+      if (parts.length === 3) {
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      }
+      return dateStr;
+    }
 
     async function fetchData() {
       try {
@@ -236,7 +247,7 @@
       document.getElementById('stat-display').innerText = displayTot;
       document.getElementById('stat-borrowed').innerText = borrowedTot;
 
-      // Render Active Borrows Table
+      // Render Active Borrows Table (Formatted in DD/MM/YYYY)
       const borrowBody = document.getElementById('borrows-table-body');
       borrowBody.innerHTML = '';
       const activeBorrowsList = state.borrows.filter(b => b.status === "BORROWED");
@@ -252,8 +263,8 @@
               <td class="p-3 text-slate-600 text-sm">${b.contact || '-'}</td>
               <td class="p-3">${item ? item.name : 'Unknown'}</td>
               <td class="p-3">${b.qty}</td>
-              <td class="p-3">${b.borrowDate}</td>
-              <td class="p-3">${b.returnDate}</td>
+              <td class="p-3 font-medium text-indigo-900">${toDisplayDate(b.borrowDate)}</td>
+              <td class="p-3 font-medium text-indigo-900">${toDisplayDate(b.returnDate)}</td>
               <td class="p-3">
                 <button onclick="handleReturn('${b.id}')" class="bg-emerald-100 text-emerald-700 px-3 py-1 rounded text-xs font-bold hover:bg-emerald-200">Return</button>
               </td>
@@ -263,18 +274,18 @@
       }
     }
 
-    // Helper function to check date overlaps
     function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
-      if (!targetItem) return false;
+      if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
 
       const totalOwned = targetItem.storage + targetItem.display;
 
-      // Filter active borrows for the same item that overlap in dates
-      // Overlap formula: (StartA <= EndB) AND (EndA >= StartB)
       const overlappingBorrows = state.borrows.filter(b => {
         if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
-        return (b.borrowDate <= reqEnd && b.returnDate >= reqStart);
+        
+        const bStart = b.borrowDate.split('T')[0];
+        const bEnd = b.returnDate.split('T')[0];
+        return (bStart <= reqEnd && bEnd >= reqStart);
       });
 
       const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
@@ -300,11 +311,10 @@
         return;
       }
 
-      // Check date-based availability before submitting
       const check = checkAvailabilityForDates(itemId, qty, borrowDate, returnDate);
 
       if (!check.isAvailable) {
-        alert(`Cannot approve borrow request!\n\nFor the selected date range (${borrowDate} to ${returnDate}), only ${check.availableQty} unit(s) are available due to existing active borrows.\nRequested: ${qty}`);
+        alert(`Cannot approve borrow request!\n\nFor the selected date range (${toDisplayDate(borrowDate)} to ${toDisplayDate(returnDate)}), only ${check.availableQty} unit(s) are available due to existing active borrows.\nRequested: ${qty}`);
         return;
       }
 
@@ -366,8 +376,8 @@
         const item = state.items.find(i => String(i.id) === String(b.itemId));
         return {
           title: `[${b.qty}x] ${item ? item.name : 'Item'} - ${b.borrower} (${b.contact})`,
-          start: b.borrowDate,
-          end: b.returnDate,
+          start: b.borrowDate.split('T')[0],
+          end: b.returnDate.split('T')[0],
           color: '#e11d48'
         };
       });
