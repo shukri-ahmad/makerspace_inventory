@@ -165,11 +165,11 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbzNP0qE3sK92Sv_QZ3HMP-VXZX-bNrPxqCvid2Y8AZmjyeabOdDdgQDzOBVv5Dd55f13g/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbz-lXeqV6K1CBP-FOyebmVkshtVKnJ_UmNR6lHxkKEJDnHjG16DyVxtacG9sTZOyfMADw/exec";
 
     let state = { items: [], borrows: [] };
 
-    // Standardizes raw string input to YYYY-MM-DD
+    // Clean dates to standard YYYY-MM-DD
     function cleanToIsoDate(val) {
       if (!val) return '';
       let str = String(val).trim().replace(/['\s]/g, '');
@@ -199,15 +199,18 @@
       return '';
     }
 
-    // Displays strictly DD/MM/YYYY
+    // Displays dates as DD/MM/YYYY
     function toDisplayDate(val) {
+      if (!val) return '-';
+      let str = String(val).trim().replace(/['\s]/g, '');
+      if (str.includes('/')) return str; 
       const iso = cleanToIsoDate(val);
       if (!iso) return '-';
       const parts = iso.split('-');
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
-    // Calculates Duration in Days
+    // Calculates difference in days
     function calculateDays(startVal, endVal) {
       const s = cleanToIsoDate(startVal);
       const e = cleanToIsoDate(endVal);
@@ -284,7 +287,7 @@
       document.getElementById('stat-display').innerText = displayTot;
       document.getElementById('stat-borrowed').innerText = borrowedTot;
 
-      // Render Active Borrows Table in Tab 2
+      // Render Active Borrows Table
       const borrowBody = document.getElementById('borrows-table-body');
       borrowBody.innerHTML = '';
       const activeBorrowsList = state.borrows.filter(b => b.status === "BORROWED");
@@ -396,7 +399,6 @@
       document.getElementById('stock-form').reset();
     }
 
-    // Uses URLSearchParams to avoid CORS payload stripping
     async function sendPost(payload) {
       try {
         const bodyParams = new URLSearchParams(payload);
