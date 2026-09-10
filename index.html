@@ -77,6 +77,10 @@
             <input type="text" id="borrower-name" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
+            <label class="block text-sm font-medium mb-1">Contact Number</label>
+            <input type="tel" id="borrower-contact" placeholder="e.g. +60123456789" required class="w-full border p-2 rounded bg-slate-50">
+          </div>
+          <div>
             <label class="block text-sm font-medium mb-1">Quantity</label>
             <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border p-2 rounded bg-slate-50">
           </div>
@@ -84,7 +88,7 @@
             <label class="block text-sm font-medium mb-1">Borrow Date</label>
             <input type="date" id="borrow-date" required class="w-full border p-2 rounded bg-slate-50">
           </div>
-          <div class="md:col-span-2">
+          <div>
             <label class="block text-sm font-medium mb-1">Expected Return Date</label>
             <input type="date" id="return-date" required class="w-full border p-2 rounded bg-slate-50">
           </div>
@@ -101,6 +105,7 @@
             <thead>
               <tr class="bg-slate-100 border-b text-sm">
                 <th class="p-3">Borrower</th>
+                <th class="p-3">Contact</th>
                 <th class="p-3">Item</th>
                 <th class="p-3">Qty</th>
                 <th class="p-3">Borrow Date</th>
@@ -159,7 +164,6 @@
   </div>
 
   <script>
-    // YOUR NEW APPS SCRIPT URL:
     const API_URL = "https://script.google.com/macros/s/AKfycbzNP0qE3sK92Sv_QZ3HMP-VXZX-bNrPxqCvid2Y8AZmjyeabOdDdgQDzOBVv5Dd55f13g/exec";
 
     let state = { items: [], borrows: [] };
@@ -170,16 +174,12 @@
           method: "GET",
           redirect: "follow"
         });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP Error! Status: ${res.status}`);
-        }
-
+        if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
         render();
       } catch (e) {
         console.error("Fetch Error:", e);
-        alert("Failed to load inventory data. Please check browser console.");
+        alert("Failed to load inventory data.");
       }
     }
 
@@ -202,7 +202,7 @@
       stockSelect.innerHTML = '';
 
       if (state.items.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items found in database. Add items to your Google Sheet!</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items found in database.</td></tr>`;
       }
 
       state.items.forEach(item => {
@@ -228,7 +228,7 @@
           </tr>
         `;
 
-        borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
+        borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} total currently free)</option>`;
         stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
 
@@ -242,13 +242,14 @@
       const activeBorrowsList = state.borrows.filter(b => b.status === "BORROWED");
       
       if (activeBorrowsList.length === 0) {
-        borrowBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No active borrows.</td></tr>`;
+        borrowBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No active borrows.</td></tr>`;
       } else {
         activeBorrowsList.forEach(b => {
           const item = state.items.find(i => String(i.id) === String(b.itemId));
           borrowBody.innerHTML += `
             <tr>
               <td class="p-3 font-medium">${b.borrower}</td>
+              <td class="p-3 text-slate-600 text-sm">${b.contact || '-'}</td>
               <td class="p-3">${item ? item.name : 'Unknown'}</td>
               <td class="p-3">${b.qty}</td>
               <td class="p-3">${b.borrowDate}</td>
@@ -262,16 +263,61 @@
       }
     }
 
+    // Helper function to check date overlaps
+    function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
+      const targetItem = state.items.find(i => String(i.id) === String(itemId));
+      if (!targetItem) return false;
+
+      const totalOwned = targetItem.storage + targetItem.display;
+
+      // Filter active borrows for the same item that overlap in dates
+      // Overlap formula: (StartA <= EndB) AND (EndA >= StartB)
+      const overlappingBorrows = state.borrows.filter(b => {
+        if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
+        return (b.borrowDate <= reqEnd && b.returnDate >= reqStart);
+      });
+
+      const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
+      const availableForDates = totalOwned - maxReservedQty;
+
+      return {
+        isAvailable: availableForDates >= requestedQty,
+        availableQty: availableForDates,
+        totalOwned: totalOwned
+      };
+    }
+
     async function handleBorrowSubmit(e) {
       e.preventDefault();
+      
+      const itemId = document.getElementById('borrow-item-select').value;
+      const qty = Number(document.getElementById('borrow-qty').value);
+      const borrowDate = document.getElementById('borrow-date').value;
+      const returnDate = document.getElementById('return-date').value;
+
+      if (returnDate < borrowDate) {
+        alert("Return date cannot be earlier than the borrow date.");
+        return;
+      }
+
+      // Check date-based availability before submitting
+      const check = checkAvailabilityForDates(itemId, qty, borrowDate, returnDate);
+
+      if (!check.isAvailable) {
+        alert(`Cannot approve borrow request!\n\nFor the selected date range (${borrowDate} to ${returnDate}), only ${check.availableQty} unit(s) are available due to existing active borrows.\nRequested: ${qty}`);
+        return;
+      }
+
       const payload = {
         action: "ADD_BORROW",
-        itemId: document.getElementById('borrow-item-select').value,
+        itemId: itemId,
         borrower: document.getElementById('borrower-name').value,
-        qty: Number(document.getElementById('borrow-qty').value),
-        borrowDate: document.getElementById('borrow-date').value,
-        returnDate: document.getElementById('return-date').value
+        contact: document.getElementById('borrower-contact').value,
+        qty: qty,
+        borrowDate: borrowDate,
+        returnDate: returnDate
       };
+
       await sendPost(payload);
       document.getElementById('borrow-form').reset();
       document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
@@ -301,14 +347,10 @@
         await fetch(API_URL, {
           method: "POST",
           mode: "no-cors",
-          headers: {
-            "Content-Type": "text/plain"
-          },
+          headers: { "Content-Type": "text/plain" },
           body: JSON.stringify(payload),
           redirect: "follow"
         });
-        
-        // Wait 1 second for Google Apps Script to process spreadsheet update
         setTimeout(fetchData, 1000);
       } catch (e) {
         console.error("Post Error:", e);
@@ -323,7 +365,7 @@
       const events = state.borrows.filter(b => b.status === "BORROWED").map(b => {
         const item = state.items.find(i => String(i.id) === String(b.itemId));
         return {
-          title: `[${b.qty}x] ${item ? item.name : 'Item'} - ${b.borrower}`,
+          title: `[${b.qty}x] ${item ? item.name : 'Item'} - ${b.borrower} (${b.contact})`,
           start: b.borrowDate,
           end: b.returnDate,
           color: '#e11d48'
@@ -337,10 +379,7 @@
       calendar.render();
     }
 
-    // Set today's date in borrow form default
     document.getElementById('borrow-date').value = new Date().toISOString().split('T')[0];
-    
-    // Initial Load
     fetchData();
   </script>
 </body>
