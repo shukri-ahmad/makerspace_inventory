@@ -11,7 +11,7 @@
 
   <!-- Navigation -->
   <nav class="bg-slate-900 text-white p-4 shadow">
-    <div class="max-w-6xl mx-auto flex justify-between items-center">
+    <div class="max-w-7xl mx-auto flex justify-between items-center">
       <h1 class="text-xl font-bold tracking-wide">Makerspace Inventory</h1>
       <div class="space-x-4">
         <button onclick="switchTab('dashboard')" class="hover:text-indigo-300 font-medium">Dashboard</button>
@@ -22,7 +22,7 @@
     </div>
   </nav>
 
-  <div class="max-w-6xl mx-auto p-6 space-y-6">
+  <div class="max-w-7xl mx-auto p-6 space-y-6">
 
     <!-- TAB 1: DASHBOARD -->
     <div id="tab-dashboard" class="space-y-6">
@@ -42,21 +42,22 @@
       </div>
 
       <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
-        <h2 class="text-lg font-bold mb-4">Inventory Availability Overview</h2>
+        <h2 class="text-lg font-bold mb-4">Inventory & Active Borrow Status Overview</h2>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="bg-slate-100 border-b border-slate-200 text-sm">
                 <th class="p-3">Item Name</th>
                 <th class="p-3">Storage</th>
-                <th class="p-3">Display / Demo</th>
-                <th class="p-3">Borrowed Out</th>
+                <th class="p-3">Display</th>
+                <th class="p-3">Borrowed</th>
                 <th class="p-3">Total Owned</th>
-                <th class="p-3">Currently Available</th>
+                <th class="p-3">Available</th>
+                <th class="p-3">Current Borrow Dates (DD/MM/YYYY)</th>
               </tr>
             </thead>
-            <tbody id="inventory-table-body" class="divide-y divide-slate-200">
-              <tr><td colspan="6" class="p-4 text-center text-slate-400">Loading data...</td></tr>
+            <tbody id="inventory-table-body" class="divide-y divide-slate-200 text-sm">
+              <tr><td colspan="7" class="p-4 text-center text-slate-400">Loading data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -85,11 +86,11 @@
             <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Borrow Date (DD/MM/YYYY) <span class="text-rose-500">*</span></label>
+            <label class="block text-sm font-medium mb-1">Borrow Date <span class="text-rose-500">*</span></label>
             <input type="date" id="borrow-date" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div>
-            <label class="block text-sm font-medium mb-1">Expected Return Date (DD/MM/YYYY) <span class="text-rose-500">*</span></label>
+            <label class="block text-sm font-medium mb-1">Expected Return Date <span class="text-rose-500">*</span></label>
             <input type="date" id="return-date" required class="w-full border p-2 rounded bg-slate-50">
           </div>
           <div class="md:col-span-2">
@@ -101,15 +102,15 @@
       <div class="bg-white p-6 rounded-lg shadow border border-slate-200">
         <h2 class="text-lg font-bold mb-4">Active Borrows Log</h2>
         <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
+          <table class="w-full text-left border-collapse text-sm">
             <thead>
-              <tr class="bg-slate-100 border-b text-sm">
+              <tr class="bg-slate-100 border-b">
                 <th class="p-3">Borrower</th>
                 <th class="p-3">Contact</th>
                 <th class="p-3">Item</th>
                 <th class="p-3">Qty</th>
-                <th class="p-3">Borrow Date (DD/MM/YYYY)</th>
-                <th class="p-3">Return Date (DD/MM/YYYY)</th>
+                <th class="p-3">Borrow Date</th>
+                <th class="p-3">Return Date</th>
                 <th class="p-3">Action</th>
               </tr>
             </thead>
@@ -168,7 +169,6 @@
 
     let state = { items: [], borrows: [] };
 
-    // Helper: Converts YYYY-MM-DD or ISO string to DD/MM/YYYY
     function toDisplayDate(dateStr) {
       if (!dateStr) return '-';
       const cleanDate = dateStr.split('T')[0];
@@ -181,10 +181,7 @@
 
     async function fetchData() {
       try {
-        const res = await fetch(API_URL, {
-          method: "GET",
-          redirect: "follow"
-        });
+        const res = await fetch(API_URL, { method: "GET", redirect: "follow" });
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
         render();
@@ -213,29 +210,42 @@
       stockSelect.innerHTML = '';
 
       if (state.items.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items found in database.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">No items found in database.</td></tr>`;
       }
 
       state.items.forEach(item => {
-        const activeBorrows = state.borrows
-          .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
-          .reduce((sum, b) => sum + b.qty, 0);
+        const itemActiveBorrows = state.borrows
+          .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED");
 
+        const activeBorrowCount = itemActiveBorrows.reduce((sum, b) => sum + b.qty, 0);
         const totalOwned = item.storage + item.display;
-        const available = totalOwned - activeBorrows;
+        const available = totalOwned - activeBorrowCount;
 
         storageTot += item.storage;
         displayTot += item.display;
-        borrowedTot += activeBorrows;
+        borrowedTot += activeBorrowCount;
+
+        // Build active borrow date range summary pills for Dashboard
+        let borrowDatesHtml = '';
+        if (itemActiveBorrows.length === 0) {
+          borrowDatesHtml = `<span class="text-slate-400 italic">None</span>`;
+        } else {
+          borrowDatesHtml = itemActiveBorrows.map(b => `
+            <div class="inline-block bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs px-2 py-1 rounded my-0.5">
+              <span class="font-semibold">${b.borrower} (${b.qty}x):</span> ${toDisplayDate(b.borrowDate)} &rarr; ${toDisplayDate(b.returnDate)}
+            </div>
+          `).join(' ');
+        }
 
         tableBody.innerHTML += `
           <tr>
             <td class="p-3 font-medium">${item.name}</td>
             <td class="p-3">${item.storage}</td>
             <td class="p-3">${item.display}</td>
-            <td class="p-3 text-rose-600 font-semibold">${activeBorrows}</td>
+            <td class="p-3 text-rose-600 font-semibold">${activeBorrowCount}</td>
             <td class="p-3 font-bold">${totalOwned}</td>
             <td class="p-3 font-bold ${available > 0 ? 'text-emerald-600' : 'text-rose-500'}">${available}</td>
+            <td class="p-3">${borrowDatesHtml}</td>
           </tr>
         `;
 
@@ -247,7 +257,7 @@
       document.getElementById('stat-display').innerText = displayTot;
       document.getElementById('stat-borrowed').innerText = borrowedTot;
 
-      // Render Active Borrows Table (Formatted in DD/MM/YYYY)
+      // Render Active Borrows Table
       const borrowBody = document.getElementById('borrows-table-body');
       borrowBody.innerHTML = '';
       const activeBorrowsList = state.borrows.filter(b => b.status === "BORROWED");
@@ -260,7 +270,7 @@
           borrowBody.innerHTML += `
             <tr>
               <td class="p-3 font-medium">${b.borrower}</td>
-              <td class="p-3 text-slate-600 text-sm">${b.contact || '-'}</td>
+              <td class="p-3 text-slate-600 text-xs">${b.contact || '-'}</td>
               <td class="p-3">${item ? item.name : 'Unknown'}</td>
               <td class="p-3">${b.qty}</td>
               <td class="p-3 font-medium text-indigo-900">${toDisplayDate(b.borrowDate)}</td>
@@ -282,7 +292,6 @@
 
       const overlappingBorrows = state.borrows.filter(b => {
         if (String(b.itemId) !== String(itemId) || b.status !== "BORROWED") return false;
-        
         const bStart = b.borrowDate.split('T')[0];
         const bEnd = b.returnDate.split('T')[0];
         return (bStart <= reqEnd && bEnd >= reqStart);
