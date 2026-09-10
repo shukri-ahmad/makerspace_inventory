@@ -169,17 +169,24 @@
 
     let state = { items: [], borrows: [] };
 
-    // Standardizes dates cleanly to YYYY-MM-DD
+    // Explicitly parses YYYYMMDD (8 digits), YYYY-MM-DD, or ISO strings into YYYY-MM-DD
     function cleanToIsoDate(val) {
       if (!val) return '';
-      let str = String(val).trim().replace(/^'/, '');
+      let str = String(val).trim().replace(/['\s]/g, '');
       if (str.includes('T')) str = str.split('T')[0];
-      if (str.includes(' ')) str = str.split(' ')[0];
 
-      // Format: YYYY-MM-DD
+      // Handle raw 8-digit YYYYMMDD string (e.g. 20260910)
+      if (/^\d{8}$/.test(str)) {
+        const y = str.substring(0, 4);
+        const m = str.substring(4, 6);
+        const d = str.substring(6, 8);
+        return `${y}-${m}-${d}`;
+      }
+
+      // Handle YYYY-MM-DD
       if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
-      // Format: DD/MM/YYYY or MM/DD/YYYY
+      // Handle DD/MM/YYYY or MM/DD/YYYY
       if (str.includes('/')) {
         const p = str.split('/');
         if (p.length === 3) {
@@ -188,17 +195,17 @@
         }
       }
 
-      const d = new Date(val);
-      if (!isNaN(d.getTime())) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+      const dateObj = new Date(val);
+      if (!isNaN(dateObj.getTime())) {
+        const y = dateObj.getFullYear();
+        const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const d = String(dateObj.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
       }
       return '';
     }
 
-    // Displays strictly as DD/MM/YYYY (No time)
+    // Displays purely as DD/MM/YYYY
     function toDisplayDate(val) {
       const iso = cleanToIsoDate(val);
       if (!iso) return '-';
