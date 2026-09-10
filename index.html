@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700;800&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Space Grotesk', system-ui, sans-serif; }
   </style>
@@ -21,18 +21,18 @@
       <div class="flex items-center space-x-3">
         <img src="LogoMakerspace.jpg" alt="Makerspace @ UTHM Logo" class="h-14 rounded object-contain border border-slate-700 bg-black">
         <div>
-          <h1 class="text-xl font-bold tracking-wider uppercase text-white flex items-center gap-1">
-            Makerspace <span class="text-amber-400 font-sans italic text-lg">@UTHM</span>
+          <h1 class="text-2xl font-extrabold tracking-wider uppercase text-white flex items-center gap-1">
+            Makerspace <span class="text-amber-400 font-sans italic text-xl">@UTHM</span>
           </h1>
-          <p class="text-xs text-slate-400 font-normal">Inventory & Equipment Management</p>
+          <p class="text-xs text-slate-400 font-normal tracking-wide">Inventory & Equipment Management</p>
         </div>
       </div>
       
       <div class="flex flex-wrap gap-2">
-        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400">Dashboard</button>
-        <button onclick="switchTab('borrow')" id="nav-borrow" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Borrow / Return</button>
-        <button onclick="switchTab('stock')" id="nav-stock" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Update Stock</button>
-        <button onclick="switchTab('calendar')" id="nav-calendar" class="px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Calendar</button>
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400">Dashboard</button>
+        <button onclick="switchTab('borrow')" id="nav-borrow" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Borrow / Return</button>
+        <button onclick="switchTab('stock')" id="nav-stock" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Update Stock</button>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition">Calendar</button>
       </div>
     </div>
   </nav>
@@ -41,37 +41,26 @@
 
     <!-- TAB 1: DASHBOARD -->
     <div id="tab-dashboard" class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-blue-800">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Storage Quantity</p>
-          <p id="stat-storage" class="text-4xl font-extrabold text-blue-900 mt-2">0</p>
+      <div class="bg-white rounded-xl shadow-md border border-slate-200 p-6">
+        <div class="flex justify-between items-center mb-6 border-b pb-3">
+          <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wider">Inventory Availability Overview</h2>
+          <span class="text-xs uppercase font-bold tracking-widest bg-slate-100 text-slate-600 px-3 py-1 rounded-full border border-slate-300">Live Status</span>
         </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-amber-500">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Display / Demo Quantity</p>
-          <p id="stat-display" class="text-4xl font-extrabold text-amber-500 mt-2">0</p>
-        </div>
-        <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-rose-500">
-          <p class="text-xs font-bold uppercase tracking-wider text-slate-500">Currently Borrowed</p>
-          <p id="stat-borrowed" class="text-4xl font-extrabold text-rose-500 mt-2">0</p>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-        <h2 class="text-lg font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Inventory Availability Overview</h2>
+        
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="bg-black text-white text-xs uppercase">
-                <th class="p-3 rounded-tl w-2/5">Item Name & Stock Bar</th>
-                <th class="p-3">Storage</th>
-                <th class="p-3">Display</th>
-                <th class="p-3">Borrowed</th>
-                <th class="p-3">Total Owned</th>
-                <th class="p-3 rounded-tr">Available</th>
+              <tr class="bg-slate-900 text-white text-sm uppercase tracking-wider">
+                <th class="p-4 rounded-tl-lg w-2/5 font-extrabold">Item Name & Stock Level</th>
+                <th class="p-4 text-center font-extrabold">Storage</th>
+                <th class="p-4 text-center font-extrabold">Display</th>
+                <th class="p-4 text-center font-extrabold text-rose-300">Borrowed</th>
+                <th class="p-4 text-center font-extrabold">Total Owned</th>
+                <th class="p-4 text-center rounded-tr-lg bg-blue-950 text-amber-400 text-base font-extrabold border-l border-blue-800 shadow-inner">Currently Available</th>
               </tr>
             </thead>
-            <tbody id="inventory-table-body" class="divide-y divide-slate-200 text-sm">
-              <tr><td colspan="6" class="p-4 text-center text-slate-400">Loading inventory data...</td></tr>
+            <tbody id="inventory-table-body" class="divide-y divide-slate-200 text-base">
+              <tr><td colspan="6" class="p-6 text-center text-slate-400 text-lg">Loading inventory data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -81,42 +70,42 @@
     <!-- TAB 2: BORROW & RETURN -->
     <div id="tab-borrow" class="hidden space-y-6">
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 class="text-lg font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Check Out Equipment</h2>
+        <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Check Out Equipment</h2>
         <form id="borrow-form" onsubmit="handleBorrowSubmit(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Select Item <span class="text-rose-500">*</span></label>
-            <select id="borrow-item-select" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none"></select>
+            <select id="borrow-item-select" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base"></select>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Borrower Name <span class="text-rose-500">*</span></label>
-            <input type="text" id="borrower-name" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="text" id="borrower-name" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Contact Number <span class="text-rose-500">*</span></label>
-            <input type="tel" id="borrower-contact" placeholder="e.g. 0123456789" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="tel" id="borrower-contact" placeholder="e.g. 0123456789" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Quantity <span class="text-rose-500">*</span></label>
-            <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="number" id="borrow-qty" min="1" value="1" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Borrow Date <span class="text-rose-500">*</span></label>
-            <input type="date" id="borrow-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="date" id="borrow-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Expected Return Date <span class="text-rose-500">*</span></label>
-            <input type="date" id="return-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="date" id="return-date" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div class="md:col-span-2 mt-2">
-            <button type="submit" class="bg-blue-900 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-black transition uppercase tracking-wider text-sm shadow">Confirm Check-out</button>
+            <button type="submit" class="bg-blue-900 text-white px-6 py-3 rounded-lg font-bold hover:bg-black transition uppercase tracking-wider text-base shadow">Confirm Check-out</button>
           </div>
         </form>
       </div>
 
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
         <div class="flex justify-between items-center mb-4 border-b pb-2">
-          <h2 class="text-lg font-bold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
-          <p class="text-xs text-slate-500">Click column headers to sort</p>
+          <h2 class="text-xl font-bold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
+          <p class="text-xs text-slate-500 font-medium">Click column headers to sort</p>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse text-sm">
@@ -141,42 +130,42 @@
     <!-- TAB 3: UPDATE STOCK (+/-) -->
     <div id="tab-stock" class="hidden">
       <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 max-w-xl mx-auto">
-        <h2 class="text-lg font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Add / Deduct Inventory</h2>
+        <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Add / Deduct Inventory</h2>
         <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-4">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Select Item</label>
-            <select id="stock-item-select" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none"></select>
+            <select id="stock-item-select" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base"></select>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Action Type</label>
-            <select id="stock-type" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <select id="stock-type" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
               <option value="ADD">Add (+) Stock</option>
               <option value="MINUS">Deduct (-) Stock</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Target Location</label>
-            <select id="stock-location" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <select id="stock-location" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
               <option value="Storage">Storage</option>
               <option value="Display">Display / Demo</option>
             </select>
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Quantity</label>
-            <input type="number" id="stock-qty" min="1" value="1" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="number" id="stock-qty" min="1" value="1" required class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Reason / Notes</label>
-            <input type="text" id="stock-notes" placeholder="e.g. Purchased 2 new units" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none">
+            <input type="text" id="stock-notes" placeholder="e.g. Purchased 2 new units" class="w-full border border-slate-300 p-2.5 rounded-lg bg-slate-50 focus:ring-2 focus:ring-blue-800 outline-none text-base">
           </div>
-          <button type="submit" class="w-full bg-black text-white py-2.5 rounded-lg font-bold hover:bg-slate-800 transition uppercase tracking-wider text-sm shadow">Update Stock Level</button>
+          <button type="submit" class="w-full bg-black text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition uppercase tracking-wider text-base shadow">Update Stock Level</button>
         </form>
       </div>
     </div>
 
     <!-- TAB 4: CALENDAR AVAILABILITY -->
     <div id="tab-calendar" class="hidden bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-      <h2 class="text-lg font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Daily Item Availability Calendar</h2>
+      <h2 class="text-xl font-bold mb-4 text-slate-900 uppercase tracking-wide border-b pb-2">Daily Item Availability Calendar</h2>
       <div id="calendar"></div>
     </div>
 
@@ -255,16 +244,15 @@
     function switchTab(tabName) {
       ['dashboard', 'borrow', 'stock', 'calendar'].forEach(t => {
         document.getElementById(`tab-${t}`).classList.add('hidden');
-        document.getElementById(`nav-${t}`).className = "px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition";
+        document.getElementById(`nav-${t}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider hover:bg-slate-800 text-slate-300 transition";
       });
       document.getElementById(`tab-${tabName}`).classList.remove('hidden');
-      document.getElementById(`nav-${tabName}`).className = "px-3 py-1.5 rounded-md font-bold text-xs uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400";
+      document.getElementById(`nav-${tabName}`).className = "px-4 py-2 rounded-md font-bold text-sm uppercase tracking-wider bg-blue-900 text-white transition border-b-2 border-amber-400";
       
       if(tabName === 'calendar') renderCalendar();
     }
 
     function render() {
-      let storageTot = 0, displayTot = 0, borrowedTot = 0;
       const tableBody = document.getElementById('inventory-table-body');
       tableBody.innerHTML = '';
 
@@ -274,7 +262,7 @@
       stockSelect.innerHTML = '';
 
       if (state.items.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No items found in database.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400 text-lg">No items found in database.</td></tr>`;
       }
 
       state.items.forEach(item => {
@@ -287,37 +275,39 @@
         const pct = totalOwned > 0 ? Math.max(0, Math.min(100, Math.round((available / totalOwned) * 100))) : 0;
 
         let barColor = 'bg-emerald-500';
-        if (pct < 20) barColor = 'bg-rose-500';
-        else if (pct <= 50) barColor = 'bg-amber-500';
-
-        storageTot += item.storage;
-        displayTot += item.display;
-        borrowedTot += activeBorrowCount;
+        let badgeBg = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+        if (pct < 20) {
+          barColor = 'bg-rose-500';
+          badgeBg = 'bg-rose-100 text-rose-800 border-rose-300';
+        } else if (pct <= 50) {
+          barColor = 'bg-amber-500';
+          badgeBg = 'bg-amber-100 text-amber-800 border-amber-300';
+        }
 
         tableBody.innerHTML += `
-          <tr class="hover:bg-slate-50 transition">
-            <td class="p-3">
-              <div class="font-semibold text-slate-900">${item.name}</div>
-              <div class="w-full bg-slate-200 h-2.5 rounded-full mt-1.5 overflow-hidden flex">
-                <div class="${barColor} h-2.5 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+          <tr class="hover:bg-slate-50 transition border-b border-slate-200">
+            <td class="p-4">
+              <div class="font-extrabold text-slate-900 text-lg">${item.name}</div>
+              <div class="w-full bg-slate-200 h-3 rounded-full mt-2 overflow-hidden flex shadow-inner">
+                <div class="${barColor} h-3 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
               </div>
-              <div class="text-[10px] text-slate-500 font-mono mt-0.5">${pct}% available (${available}/${totalOwned})</div>
+              <div class="text-xs text-slate-500 font-mono mt-1 font-semibold">${pct}% available (${available} of ${totalOwned} ready)</div>
             </td>
-            <td class="p-3 font-mono">${item.storage}</td>
-            <td class="p-3 font-mono">${item.display}</td>
-            <td class="p-3 font-mono text-rose-600 font-bold">${activeBorrowCount}</td>
-            <td class="p-3 font-mono font-bold">${totalOwned}</td>
-            <td class="p-3 font-mono font-bold ${available > 0 ? 'text-emerald-600' : 'text-rose-500'}">${available}</td>
+            <td class="p-4 text-center font-mono text-lg font-semibold">${item.storage}</td>
+            <td class="p-4 text-center font-mono text-lg font-semibold">${item.display}</td>
+            <td class="p-4 text-center font-mono text-lg text-rose-600 font-extrabold">${activeBorrowCount}</td>
+            <td class="p-4 text-center font-mono text-lg font-extrabold">${totalOwned}</td>
+            <td class="p-4 text-center border-l border-slate-200 bg-slate-50/50">
+              <span class="inline-block px-4 py-1.5 rounded-full font-mono text-2xl font-black border shadow-sm ${badgeBg}">
+                ${available}
+              </span>
+            </td>
           </tr>
         `;
 
         borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
         stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
-
-      document.getElementById('stat-storage').innerText = storageTot;
-      document.getElementById('stat-display').innerText = displayTot;
-      document.getElementById('stat-borrowed').innerText = borrowedTot;
 
       renderBorrowsTable();
     }
@@ -367,12 +357,12 @@
           if (isEditing) {
             borrowBody.innerHTML += `
               <tr class="bg-amber-50 border-2 border-amber-300">
-                <td class="p-2"><input type="text" id="edit-name-${b.id}" value="${b.borrower}" class="border border-slate-300 p-1 rounded text-xs w-full"></td>
-                <td class="p-2"><input type="tel" id="edit-contact-${b.id}" value="${cleanContact}" class="border border-slate-300 p-1 rounded text-xs w-full"></td>
+                <td class="p-2"><input type="text" id="edit-name-${b.id}" value="${b.borrower}" class="border border-slate-300 p-1.5 rounded text-xs w-full font-medium"></td>
+                <td class="p-2"><input type="tel" id="edit-contact-${b.id}" value="${cleanContact}" class="border border-slate-300 p-1.5 rounded text-xs w-full font-mono"></td>
                 <td class="p-2 text-xs font-semibold">${item ? item.name : 'Unknown'}</td>
-                <td class="p-2"><input type="number" id="edit-qty-${b.id}" value="${b.qty}" min="1" class="border border-slate-300 p-1 rounded text-xs w-16"></td>
-                <td class="p-2"><input type="date" id="edit-bdate-${b.id}" value="${cleanToIsoDate(b.borrowDate)}" class="border border-slate-300 p-1 rounded text-xs"></td>
-                <td class="p-2"><input type="date" id="edit-rdate-${b.id}" value="${cleanToIsoDate(b.returnDate)}" class="border border-slate-300 p-1 rounded text-xs"></td>
+                <td class="p-2"><input type="number" id="edit-qty-${b.id}" value="${b.qty}" min="1" class="border border-slate-300 p-1.5 rounded text-xs w-16 font-mono"></td>
+                <td class="p-2"><input type="date" id="edit-bdate-${b.id}" value="${cleanToIsoDate(b.borrowDate)}" class="border border-slate-300 p-1.5 rounded text-xs font-mono"></td>
+                <td class="p-2"><input type="date" id="edit-rdate-${b.id}" value="${cleanToIsoDate(b.returnDate)}" class="border border-slate-300 p-1.5 rounded text-xs font-mono"></td>
                 <td class="p-2 font-bold text-xs">${durationDays}d</td>
                 <td class="p-2 flex space-x-1">
                   <button onclick="saveInlineEdit('${b.id}')" class="bg-blue-900 text-white px-2 py-1 rounded text-xs font-bold hover:bg-black">Save</button>
