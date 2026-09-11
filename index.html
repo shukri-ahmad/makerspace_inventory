@@ -99,12 +99,8 @@
           </div>
         </div>
         
-        <!-- Category Tabs -->
-        <div id="category-tabs-container" class="flex flex-wrap gap-2 mb-6">
-          <!-- Dynamic Tabs will be injected here -->
-        </div>
+        <div id="category-tabs-container" class="flex flex-wrap gap-2 mb-6"></div>
 
-        <!-- Table Wrapper -->
         <div id="category-table-wrapper" class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm transition-all duration-300">
           <table class="w-full text-left border-collapse bg-white">
             <thead id="category-table-head" class="bg-slate-100 text-slate-900 border-b border-slate-200 transition-all duration-300">
@@ -216,24 +212,25 @@
 
       </div>
 
-      <!-- Active Borrows Table -->
+      <!-- Active Borrows & History Table -->
       <div class="glass-card p-6 sm:p-8 rounded-2xl mt-8 border-t-4 border-t-blue-900">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2 border-b border-slate-100 pb-4">
-          <h2 class="text-xl font-extrabold text-slate-900 uppercase tracking-wide">Active Borrows Log</h2>
+          <h2 class="text-xl font-extrabold text-slate-900 uppercase tracking-wide">Borrowing History & Logs</h2>
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Click Headers To Sort ⇕</span>
         </div>
         
         <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
           <table class="w-full text-left border-collapse text-sm bg-white">
             <thead>
-              <tr class="bg-slate-50 text-slate-600 text-xs uppercase cursor-pointer select-none border-b border-slate-200">
+              <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider cursor-pointer select-none border-b border-slate-200">
                 <th onclick="sortTable('borrower')" class="p-4 font-bold hover:text-blue-600 transition-colors">Borrower</th>
                 <th onclick="sortTable('contact')" class="p-4 font-bold hover:text-blue-600 transition-colors">Contact</th>
                 <th onclick="sortTable('item')" class="p-4 font-bold hover:text-blue-600 transition-colors">Item</th>
                 <th onclick="sortTable('qty')" class="p-4 font-bold hover:text-blue-600 transition-colors text-center">Qty</th>
-                <th onclick="sortTable('borrowDate')" class="p-4 font-bold hover:text-blue-600 transition-colors">Checked Out</th>
-                <th onclick="sortTable('returnDate')" class="p-4 font-bold hover:text-blue-600 transition-colors">Due Date</th>
-                <th onclick="sortTable('duration')" class="p-4 font-bold hover:text-blue-600 transition-colors text-center">Days</th>
+                <th onclick="sortTable('borrowDate')" class="p-4 font-bold hover:text-blue-600 transition-colors">Out</th>
+                <th onclick="sortTable('returnDate')" class="p-4 font-bold hover:text-blue-600 transition-colors">Due</th>
+                <th onclick="sortTable('actualReturnDate')" class="p-4 font-bold hover:text-blue-600 transition-colors">Returned On</th>
+                <th onclick="sortTable('status')" class="p-4 font-bold hover:text-blue-600 transition-colors text-center">Status</th>
                 <th class="p-4 font-bold text-right">Manage</th>
               </tr>
             </thead>
@@ -318,7 +315,7 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbxCc-Xk27N6ihyEkqiKSo-uz_yAauFW06UksR2zvKBKRiSOY2whBdj5XZRJbeyua8Ar-Q/exec";
 
     let state = { items: [], borrows: [] };
-    let sortColumn = 'borrower';
+    let sortColumn = 'status';
     let sortAscending = true;
     let editingBorrowId = null;
     let borrowCart = []; 
@@ -411,16 +408,6 @@
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
-    function calculateDays(startVal, endVal) {
-      const s = cleanToIsoDate(startVal);
-      const e = cleanToIsoDate(endVal);
-      if (!s || !e) return 0;
-      const d1 = new Date(s + 'T00:00:00');
-      const d2 = new Date(e + 'T00:00:00');
-      const diffDays = Math.round((d2 - d1) / (1000 * 60 * 60 * 24));
-      return diffDays >= 0 ? diffDays : 0;
-    }
-
     async function fetchData() {
       try {
         const res = await fetch(API_URL, { method: "GET", redirect: "follow" });
@@ -472,7 +459,6 @@
       let chartDisplay = [];
       let chartBorrowed = [];
 
-      // Sort logic updated: Order by Category -> then by Total Owned (Highest First) -> then by Name
       const sortedAllItems = [...state.items].sort((a, b) => {
         if(a.category < b.category) return -1;
         if(a.category > b.category) return 1;
@@ -571,19 +557,16 @@
       const tableBody = document.getElementById('inventory-table-body');
       tableBody.innerHTML = '';
 
-      // Sorting: Highest "Total Owned" first, then alphabetically
       const filteredItems = state.items.filter(i => i.category === activeCategoryTab).sort((a,b) => {
         const ownedA = a.storage + a.display;
         const ownedB = b.storage + b.display;
-        if (ownedB !== ownedA) return ownedB - ownedA; // Descending
+        if (ownedB !== ownedA) return ownedB - ownedA; 
         return a.name.localeCompare(b.name);
       });
       
       const theme = categoryTheme[activeCategoryTab] || categoryTheme['default'];
-      
       const wrapper = document.getElementById('category-table-wrapper');
       wrapper.className = `overflow-x-auto rounded-xl border shadow-sm transition-all duration-300 ${theme.bgWrap} ${theme.borderWrap}`;
-      
       const thead = document.getElementById('category-table-head');
       thead.className = `${theme.bgHead} ${theme.textHead} border-b ${theme.borderHead} transition-all duration-300`;
 
@@ -637,47 +620,15 @@
         data: {
           labels: labels,
           datasets: [
-            {
-              label: 'Available (Storage)',
-              data: availableData,
-              backgroundColor: 'rgba(16, 185, 129, 0.85)',
-              hoverBackgroundColor: 'rgba(16, 185, 129, 1)',
-              borderRadius: 4
-            },
-            {
-              label: 'On Display',
-              data: displayData,
-              backgroundColor: 'rgba(245, 158, 11, 0.85)',
-              hoverBackgroundColor: 'rgba(245, 158, 11, 1)',
-              borderRadius: 4
-            },
-            {
-              label: 'Borrowed Out',
-              data: borrowedData,
-              backgroundColor: 'rgba(244, 63, 94, 0.85)',
-              hoverBackgroundColor: 'rgba(244, 63, 94, 1)',
-              borderRadius: 4
-            }
+            { label: 'Available (Storage)', data: availableData, backgroundColor: 'rgba(16, 185, 129, 0.85)', hoverBackgroundColor: 'rgba(16, 185, 129, 1)', borderRadius: 4 },
+            { label: 'On Display', data: displayData, backgroundColor: 'rgba(245, 158, 11, 0.85)', hoverBackgroundColor: 'rgba(245, 158, 11, 1)', borderRadius: 4 },
+            { label: 'Borrowed Out', data: borrowedData, backgroundColor: 'rgba(244, 63, 94, 0.85)', hoverBackgroundColor: 'rgba(244, 63, 94, 1)', borderRadius: 4 }
           ]
         },
         options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          interaction: { mode: 'index', intersect: false },
-          plugins: {
-            legend: {
-              position: 'top',
-              labels: {
-                font: { family: "'Space Grotesk', sans-serif", size: 12, weight: 'bold' },
-                color: '#475569', usePointStyle: true, boxWidth: 8
-              }
-            },
-            tooltip: {
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              titleFont: { family: "'Space Grotesk', sans-serif", size: 14, weight: 'bold' },
-              bodyFont: { family: "'Space Grotesk', sans-serif", size: 13 },
-              padding: 12, cornerRadius: 8
-            }
+          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { position: 'top', labels: { font: { family: "'Space Grotesk', sans-serif", size: 12, weight: 'bold' }, color: '#475569', usePointStyle: true, boxWidth: 8 } },
+            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: "'Space Grotesk', sans-serif", size: 14, weight: 'bold' }, bodyFont: { family: "'Space Grotesk', sans-serif", size: 13 }, padding: 12, cornerRadius: 8 }
           },
           scales: {
             x: { stacked: true, grid: { display: false }, ticks: { font: { family: "'Space Grotesk', sans-serif", weight: 'bold' }, color: '#64748b' } },
@@ -690,7 +641,6 @@
     function addBorrowItem() {
       const itemSelect = document.getElementById('borrow-item-select');
       if (!itemSelect.value) return;
-
       const itemId = itemSelect.value;
       const itemName = itemSelect.options[itemSelect.selectedIndex].text.split(' (')[0];
       const qty = Number(document.getElementById('borrow-qty').value);
@@ -716,9 +666,7 @@
           alert(`Limit reached! You cannot add more ${itemName}.`);
           return;
         }
-      } else {
-        borrowCart.push({ itemId, itemName, qty });
-      }
+      } else { borrowCart.push({ itemId, itemName, qty }); }
       
       renderCart();
       document.getElementById('borrow-qty').value = 1; 
@@ -762,50 +710,29 @@
 
     async function submitMultiBorrow() {
       if(borrowCart.length === 0) { alert("Please add at least one item to the list."); return; }
-      
       const borrower = document.getElementById('borrower-name').value;
       const contact = document.getElementById('borrower-contact').value;
       const bDate = document.getElementById('borrow-date').value;
       const rDate = document.getElementById('return-date').value;
 
-      if(!borrower || !contact || !bDate || !rDate) { 
-        alert("Please fill in Borrower Name, Contact, and Dates."); 
-        return; 
-      }
+      if(!borrower || !contact || !bDate || !rDate) { alert("Please fill in Borrower Name, Contact, and Dates."); return; }
 
       for(let item of borrowCart) {
         const check = checkAvailabilityForDates(item.itemId, item.qty, bDate, rDate);
-        if(!check.isAvailable) {
-          alert(`Error: ${item.itemName} no longer has ${item.qty} available. Please adjust your cart.`);
-          return;
-        }
+        if(!check.isAvailable) { alert(`Error: ${item.itemName} no longer has ${item.qty} available. Please adjust your cart.`); return; }
       }
 
-      const payload = {
-        action: "ADD_MULTI_BORROW",
-        borrower: borrower,
-        contact: contact,
-        borrowDate: bDate,
-        returnDate: rDate,
-        itemsJSON: JSON.stringify(borrowCart)
-      };
+      const payload = { action: "ADD_MULTI_BORROW", borrower: borrower, contact: contact, borrowDate: bDate, returnDate: rDate, itemsJSON: JSON.stringify(borrowCart) };
 
       const btn = document.querySelector('button[onclick="submitMultiBorrow()"]');
       const originalText = btn.innerText;
-      btn.innerText = "Processing Checkout...";
-      btn.disabled = true;
-      btn.classList.add('opacity-75');
+      btn.innerText = "Processing Checkout..."; btn.disabled = true; btn.classList.add('opacity-75');
 
       await sendPost(payload);
       
-      borrowCart = [];
-      renderCart();
-      document.getElementById('borrower-name').value = '';
-      document.getElementById('borrower-contact').value = '';
-      
-      btn.innerText = originalText;
-      btn.disabled = false;
-      btn.classList.remove('opacity-75');
+      borrowCart = []; renderCart();
+      document.getElementById('borrower-name').value = ''; document.getElementById('borrower-contact').value = '';
+      btn.innerText = originalText; btn.disabled = false; btn.classList.remove('opacity-75');
     }
 
     function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
@@ -833,9 +760,14 @@
     function renderBorrowsTable() {
       const borrowBody = document.getElementById('borrows-table-body');
       borrowBody.innerHTML = '';
-      let activeBorrowsList = state.borrows.filter(b => b.status === "BORROWED");
+      
+      // We now show ALL records, not just active ones
+      let activeBorrowsList = [...state.borrows];
 
       activeBorrowsList.sort((a, b) => {
+        // Force Active (BORROWED) to always be above History (RETURNED) regardless of sort
+        if (a.status !== b.status) return a.status === "BORROWED" ? -1 : 1;
+
         const itemA = state.items.find(i => String(i.id) === String(a.itemId))?.name || '';
         const itemB = state.items.find(i => String(i.id) === String(b.itemId))?.name || '';
         let valA, valB;
@@ -845,22 +777,26 @@
         else if (sortColumn === 'qty') { valA = Number(a.qty); valB = Number(b.qty); }
         else if (sortColumn === 'borrowDate') { valA = cleanToIsoDate(a.borrowDate); valB = cleanToIsoDate(b.borrowDate); }
         else if (sortColumn === 'returnDate') { valA = cleanToIsoDate(a.returnDate); valB = cleanToIsoDate(b.returnDate); }
-        else if (sortColumn === 'duration') { valA = calculateDays(a.borrowDate, a.returnDate); valB = calculateDays(b.borrowDate, b.returnDate); }
+        else if (sortColumn === 'actualReturnDate') { valA = cleanToIsoDate(a.actualReturnDate); valB = cleanToIsoDate(b.actualReturnDate); }
+        else if (sortColumn === 'status') { valA = a.status; valB = b.status; }
+        else { valA = a.borrower; valB = b.borrower; }
+
         if (valA < valB) return sortAscending ? -1 : 1;
         if (valA > valB) return sortAscending ? 1 : -1;
         return 0;
       });
 
       if (activeBorrowsList.length === 0) {
-        borrowBody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 font-medium">No active borrows found.</td></tr>`;
+        borrowBody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 font-medium">No borrow records found.</td></tr>`;
       } else {
         activeBorrowsList.forEach(b => {
           const item = state.items.find(i => String(i.id) === String(b.itemId));
-          const durationDays = calculateDays(b.borrowDate, b.returnDate);
           let cleanContact = String(b.contact || '').replace(/^'/, '').trim();
           const isEditing = editingBorrowId === b.id;
+          const isReturned = b.status === "RETURNED";
+          const todayStr = new Date().toISOString().split('T')[0];
 
-          if (isEditing && isAdmin) {
+          if (isEditing && isAdmin && !isReturned) {
             borrowBody.innerHTML += `
               <tr class="bg-amber-50 border-y-2 border-amber-300">
                 <td class="p-3"><input type="text" id="edit-name-${b.id}" value="${b.borrower}" class="border border-amber-300 p-2 rounded-lg text-sm w-full font-bold outline-none focus:ring-2 focus:ring-amber-500 bg-white"></td>
@@ -869,37 +805,52 @@
                 <td class="p-3"><input type="number" id="edit-qty-${b.id}" value="${b.qty}" min="1" class="border border-amber-300 p-2 rounded-lg text-sm w-16 font-mono font-bold text-center outline-none focus:ring-2 focus:ring-amber-500 bg-white"></td>
                 <td class="p-3"><input type="date" id="edit-bdate-${b.id}" value="${cleanToIsoDate(b.borrowDate)}" class="border border-amber-300 p-2 rounded-lg text-xs font-mono outline-none focus:ring-2 focus:ring-amber-500 bg-white"></td>
                 <td class="p-3"><input type="date" id="edit-rdate-${b.id}" value="${cleanToIsoDate(b.returnDate)}" class="border border-amber-300 p-2 rounded-lg text-xs font-mono outline-none focus:ring-2 focus:ring-amber-500 bg-white"></td>
-                <td class="p-3 font-black text-sm text-center">${durationDays}d</td>
+                <td class="p-3 text-center text-slate-400 font-mono text-xs">-</td>
+                <td class="p-3 text-center"><span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-1 rounded">EDITING</span></td>
                 <td class="p-3">
                   <div class="flex flex-col gap-1.5">
-                    <button onclick="saveInlineEdit('${b.id}')" class="bg-blue-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-black transition-colors w-full shadow-sm">Save</button>
-                    <button onclick="cancelInlineEdit()" class="bg-white text-slate-600 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-100 transition-colors w-full shadow-sm">Cancel</button>
+                    <button onclick="saveInlineEdit('${b.id}')" class="bg-blue-900 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-black transition-colors w-full shadow-sm">SAVE</button>
+                    <button onclick="cancelInlineEdit()" class="bg-white text-slate-600 border border-slate-300 px-3 py-1.5 rounded-lg text-[10px] font-bold hover:bg-slate-100 transition-colors w-full shadow-sm">CANCEL</button>
                   </div>
                 </td>
               </tr>
             `;
           } else {
-            let actionButtons = isAdmin 
-              ? `<button onclick="startInlineEdit('${b.id}')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors border border-transparent hover:border-amber-200">Edit</button>
-                 <button onclick="handleReturn('${b.id}')" class="text-emerald-700 hover:text-white bg-emerald-100 hover:bg-emerald-600 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors shadow-sm">Return</button>`
-              : `<span class="text-[10px] text-slate-400 italic bg-slate-50 px-2 py-1 rounded border border-slate-100">Login to manage</span>`;
+            let actionButtons = '';
+            let statusBadge = '';
+            
+            if (isReturned) {
+              statusBadge = `<span class="bg-slate-200 text-slate-500 text-[10px] font-black px-2 py-1 rounded">RETURNED</span>`;
+              actionButtons = `<span class="text-[10px] text-slate-400 italic">Archived</span>`;
+            } else {
+              const isOverdue = cleanToIsoDate(b.returnDate) < todayStr;
+              statusBadge = isOverdue 
+                ? `<span class="bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-black px-2 py-1 rounded animate-pulse">OVERDUE</span>` 
+                : `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-1 rounded">ACTIVE</span>`;
+              
+              if (isAdmin) {
+                actionButtons = `
+                 <button onclick="startInlineEdit('${b.id}')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1.5 rounded text-[10px] font-bold transition-colors border border-transparent hover:border-amber-200">EDIT</button>
+                 <button onclick="handleReturn('${b.id}')" class="text-emerald-700 hover:text-white bg-emerald-100 hover:bg-emerald-600 px-2 py-1.5 rounded text-[10px] font-bold transition-colors shadow-sm">RETURN</button>`;
+              } else {
+                actionButtons = `<span class="text-[9px] text-slate-400 italic">Login to edit</span>`;
+              }
+            }
 
-            const todayStr = new Date().toISOString().split('T')[0];
-            const retIso = cleanToIsoDate(b.returnDate);
-            const isOverdue = retIso < todayStr;
-            const overdueBadge = isOverdue ? `<span class="bg-rose-100 text-rose-700 text-[10px] font-black px-2 py-0.5 rounded-full ml-2 border border-rose-200">OVERDUE</span>` : '';
+            const rowClass = isReturned ? "bg-slate-50 opacity-60 grayscale-[50%] border-b border-slate-100" : "bg-white hover:bg-blue-50/40 transition duration-150 group border-b border-slate-100";
 
             borrowBody.innerHTML += `
-              <tr class="hover:bg-blue-50/40 transition duration-150 group border-b border-slate-100">
-                <td class="p-4 font-bold text-slate-900 group-hover:text-blue-900 transition-colors">${b.borrower}</td>
+              <tr class="${rowClass}">
+                <td class="p-4 font-bold text-slate-900 ${isReturned ? '' : 'group-hover:text-blue-900 transition-colors'}">${b.borrower}</td>
                 <td class="p-4 font-mono text-xs text-slate-500">${isAdmin ? (cleanContact || '-') : '<span class="opacity-40">*** Hidden</span>'}</td>
-                <td class="p-4 font-semibold text-slate-700">${item ? item.name : 'Unknown'}</td>
-                <td class="p-4 font-mono font-black text-center text-lg">${b.qty}</td>
-                <td class="p-4 font-mono text-slate-600 text-sm">${toDisplayDate(b.borrowDate)}</td>
-                <td class="p-4 font-mono font-bold text-sm ${isOverdue ? 'text-rose-600' : 'text-slate-600'}">${toDisplayDate(b.returnDate)} ${overdueBadge}</td>
-                <td class="p-4 font-black text-slate-800 text-center">${durationDays} <span class="text-[10px] font-bold text-slate-400">d</span></td>
+                <td class="p-4 font-semibold text-slate-700 text-xs">${item ? item.name : 'Unknown'}</td>
+                <td class="p-4 font-mono font-black text-center text-sm">${b.qty}</td>
+                <td class="p-4 font-mono text-slate-600 text-xs">${toDisplayDate(b.borrowDate)}</td>
+                <td class="p-4 font-mono font-bold text-xs text-slate-600">${toDisplayDate(b.returnDate)}</td>
+                <td class="p-4 font-mono font-bold text-xs ${isReturned ? 'text-slate-800' : 'text-slate-400'}">${toDisplayDate(b.actualReturnDate)}</td>
+                <td class="p-4 text-center">${statusBadge}</td>
                 <td class="p-4 text-right">
-                  <div class="flex items-center justify-end gap-2">${actionButtons}</div>
+                  <div class="flex items-center justify-end gap-1.5">${actionButtons}</div>
                 </td>
               </tr>
             `;
@@ -924,9 +875,24 @@
       editingBorrowId = null;
     }
 
+    // --- OPTIMISTIC UI FIX FOR RETURNS ---
     async function handleReturn(borrowId) {
       if(!confirm("Mark this equipment as returned?")) return;
-      await sendPost({ action: "RETURN_ITEM", borrowId: borrowId });
+      
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      // 1. Optimistic Update: Instantly change the status locally so the UI updates
+      const targetBorrow = state.borrows.find(b => String(b.id) === String(borrowId));
+      if (targetBorrow) {
+        targetBorrow.status = "RETURNED";
+        targetBorrow.actualReturnDate = todayStr;
+      }
+      
+      // 2. Instantly re-render to gray it out and give stock back in the charts
+      renderAll();
+
+      // 3. Send to Google Sheets in the background (Pass actualReturnDate)
+      await sendPost({ action: "RETURN_ITEM", borrowId: borrowId, actualReturnDate: todayStr });
     }
 
     async function handleStockSubmit(e) {
@@ -954,7 +920,9 @@
           body: bodyParams,
           redirect: "follow"
         });
-        setTimeout(fetchData, 1200);
+        
+        // Wait 2 seconds so Google Sheets finishes saving before refetching
+        setTimeout(fetchData, 2000); 
       } catch (e) {
         console.error("Post Error:", e);
         alert("Failed to save changes. Check console.");
@@ -991,7 +959,6 @@
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
 
-      // Sorting: Highest "Total Owned" first, then alphabetically
       const sortedItems = [...state.items].sort((a, b) => {
         let idxA = targetCategoryOrder.indexOf(a.category); let idxB = targetCategoryOrder.indexOf(b.category);
         if(idxA === -1) idxA = 999; if(idxB === -1) idxB = 999;
