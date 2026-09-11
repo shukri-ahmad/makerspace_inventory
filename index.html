@@ -158,7 +158,9 @@
             <div class="space-y-4">
               <div>
                 <label class="block text-xs font-bold uppercase text-blue-800 mb-1.5">Select Equipment <span class="text-rose-500">*</span></label>
-                <select id="borrow-item-select" class="w-full border-blue-200 p-3 rounded-xl bg-white input-glow transition-all text-sm outline-none border font-medium shadow-sm"></select>
+                <select id="borrow-item-select" class="w-full border-blue-200 p-3 rounded-xl bg-white input-glow transition-all text-sm outline-none border font-medium shadow-sm">
+                  <!-- Options injected here with optgroups -->
+                </select>
               </div>
               <div>
                 <label class="block text-xs font-bold uppercase text-blue-800 mb-1.5">Quantity <span class="text-rose-500">*</span></label>
@@ -251,7 +253,9 @@
         <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-5">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Select Equipment</label>
-            <select id="stock-item-select" required class="w-full border-slate-300 p-3 rounded-xl bg-slate-50 input-glow transition-all text-sm outline-none border"></select>
+            <select id="stock-item-select" required class="w-full border-slate-300 p-3 rounded-xl bg-slate-50 input-glow transition-all text-sm outline-none border">
+              <!-- Options injected here with optgroups -->
+            </select>
           </div>
           <div class="grid grid-cols-2 gap-4">
             <div>
@@ -405,6 +409,10 @@
         const res = await fetch(API_URL, { method: "GET", redirect: "follow" });
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
+        
+        // Ensure category defaults if missing in DB
+        state.items.forEach(i => i.category = i.category || 'Uncategorized');
+        
         render();
       } catch (e) {
         console.error("Fetch Error:", e);
@@ -444,8 +452,6 @@
       tableBody.innerHTML = '';
       const borrowSelect = document.getElementById('borrow-item-select');
       const stockSelect = document.getElementById('stock-item-select');
-      borrowSelect.innerHTML = '';
-      stockSelect.innerHTML = '';
 
       if (state.items.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 font-medium">No items found in database.</td></tr>`;
@@ -456,7 +462,14 @@
       let chartDisplay = [];
       let chartBorrowed = [];
 
-      state.items.forEach(item => {
+      // Sort items by Category, then by Name
+      const sortedItems = [...state.items].sort((a, b) => {
+        if(a.category < b.category) return -1;
+        if(a.category > b.category) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      sortedItems.forEach(item => {
         const activeBorrowCount = state.borrows
           .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
           .reduce((sum, b) => sum + b.qty, 0);
@@ -479,6 +492,7 @@
           <tr class="hover:bg-blue-50/50 transition duration-150 group border-b border-slate-100">
             <td class="p-5">
               <div class="font-extrabold text-slate-900 text-lg group-hover:text-blue-900 transition-colors">${item.name}</div>
+              <span class="inline-block mt-1 px-2 py-0.5 bg-slate-200 text-slate-600 text-[10px] font-bold uppercase tracking-wider rounded-md">${item.category}</span>
               <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden flex shadow-inner">
                 <div class="${barColor} h-2.5 rounded-full transition-all duration-1000 ease-out" style="width: ${pct}%"></div>
               </div>
@@ -494,9 +508,31 @@
             </td>
           </tr>
         `;
-        borrowSelect.innerHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
-        stockSelect.innerHTML += `<option value="${item.id}">${item.name}</option>`;
       });
+
+      // Render Dropdowns with OptGroups by Category
+      let borrowHTML = '<option value="" disabled selected>Select an item...</option>';
+      let stockHTML = '<option value="" disabled selected>Select an item...</option>';
+      
+      const uniqueCategories = [...new Set(state.items.map(i => i.category))].sort();
+      uniqueCategories.forEach(cat => {
+        borrowHTML += `<optgroup label="— ${cat} —">`;
+        stockHTML += `<optgroup label="— ${cat} —">`;
+        
+        const catItems = state.items.filter(i => i.category === cat);
+        catItems.forEach(item => {
+          const activeBorrowCount = state.borrows.filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED").reduce((sum, b) => sum + b.qty, 0);
+          const available = Math.max(0, item.storage - activeBorrowCount); 
+          borrowHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
+          stockHTML += `<option value="${item.id}">${item.name}</option>`;
+        });
+        
+        borrowHTML += `</optgroup>`;
+        stockHTML += `</optgroup>`;
+      });
+
+      borrowSelect.innerHTML = borrowHTML;
+      stockSelect.innerHTML = stockHTML;
 
       renderChart(chartLabels, chartAvailable, chartDisplay, chartBorrowed);
       renderBorrowsTable();
@@ -694,7 +730,7 @@
         return (cleanToIsoDate(b.borrowDate) <= cleanReqEnd && cleanToIsoDate(b.returnDate) >= cleanReqStart);
       });
       const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
-      const availableForDates = totalOwned - maxReservedQty;
+      const availableForDates = targetItem.storage - maxReservedQty; 
       return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
     }
 
@@ -865,12 +901,21 @@
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
 
-      state.items.forEach(item => {
+      // Group Heatmap by Category as well
+      const sortedItems = [...state.items].sort((a, b) => {
+        if(a.category < b.category) return -1;
+        if(a.category > b.category) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      sortedItems.forEach(item => {
         const totalOwned = item.storage + item.display;
         html += `<tr class="hover:bg-blue-50/30 transition group">
           <td class="p-4 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] z-10 group-hover:text-blue-900 group-hover:bg-blue-50/90 transition-colors">
             ${item.name}
-            <div class="text-[10px] text-slate-400 font-mono mt-1 font-bold uppercase tracking-wider">Owned: ${totalOwned}</div>
+            <div class="flex items-center gap-2 mt-1">
+              <span class="inline-block px-1.5 py-0.5 bg-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider rounded">${item.category}</span>
+            </div>
           </td>`;
         
         dates.forEach(d => {
@@ -884,7 +929,7 @@
             return sum;
           }, 0);
 
-          const available = totalOwned - usedQty;
+          const available = Math.max(0, item.storage - usedQty);
           
           let cellStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm'; 
           if (totalOwned === 0) cellStyle = 'bg-slate-100 text-slate-300 border-slate-200';
