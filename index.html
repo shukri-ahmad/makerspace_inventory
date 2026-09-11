@@ -5,11 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Makerspace @ UTHM - Inventory App</title>
   
-  <!-- Browser Tab Icon (Favicon) -->
   <link rel="icon" type="image/jpeg" href="LogoMakerspace.jpg">
-  
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -81,17 +78,60 @@
     <!-- TAB 1: DASHBOARD -->
     <div id="tab-dashboard" class="animate-fade-up space-y-8">
       
-      <!-- Top Chart Container -->
-      <div class="glass-card rounded-2xl p-6 sm:p-8 shadow-lg border-t-4 border-t-emerald-500">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-xl font-extrabold text-slate-900 uppercase tracking-wider">Equipment Utilization Chart</h2>
-          <span class="flex items-center gap-2 text-xs uppercase font-bold tracking-widest text-slate-500">
-            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Live Data
-          </span>
+      <!-- Command Center Metric Cards (Replaces Chart) -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        
+        <!-- Metric 1: Total Assets -->
+        <div class="bg-gradient-to-br from-blue-600 to-blue-900 rounded-2xl p-5 shadow-lg border border-blue-400/30 text-white relative overflow-hidden group hover:-translate-y-1 transition-all">
+          <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M20 7h-4V5c0-1.103-.897-2-2-2h-4c-1.103 0-2 .897-2 2v2H4c-1.103 0-2 .897-2 2v10c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V9c0-1.103-.897-2-2-2zM10 5h4v2h-4V5zM4 9h16l.002 10H4V9z"></path></svg>
+          </div>
+          <p class="text-blue-200 text-xs font-bold uppercase tracking-widest mb-1">Total Fleet Assets</p>
+          <div class="flex items-end gap-2">
+            <h3 id="metric-total-assets" class="text-4xl font-black drop-shadow-md">0</h3>
+            <span class="text-sm text-blue-300 font-medium mb-1">Units</span>
+          </div>
         </div>
-        <div class="relative h-72 w-full">
-          <canvas id="inventoryChart"></canvas>
+
+        <!-- Metric 2: Currently Out -->
+        <div class="bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl p-5 shadow-lg border border-amber-400/30 text-white relative overflow-hidden group hover:-translate-y-1 transition-all">
+          <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M21 4H3a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h18a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm-1 14H4V6h16v12z"></path><path d="M12 8l-4 4h3v4h2v-4h3l-4-4z"></path></svg>
+          </div>
+          <p class="text-amber-100 text-xs font-bold uppercase tracking-widest mb-1">Currently Out</p>
+          <div class="flex items-end gap-2">
+            <h3 id="metric-borrowed-out" class="text-4xl font-black drop-shadow-md">0</h3>
+            <span class="text-sm text-amber-200 font-medium mb-1">Units</span>
+          </div>
         </div>
+
+        <!-- Metric 3: Out of Stock Alerts -->
+        <div class="bg-gradient-to-br from-slate-700 to-slate-900 rounded-2xl p-5 shadow-lg border border-slate-600/30 text-white relative overflow-hidden group hover:-translate-y-1 transition-all">
+          <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm4.207 12.793-1.414 1.414L12 13.414l-2.793 2.793-1.414-1.414L10.586 12 7.793 9.207l1.414-1.414L12 10.586l2.793-2.793 1.414 1.414L13.414 12l2.793 2.793z"></path></svg>
+          </div>
+          <p class="text-slate-300 text-xs font-bold uppercase tracking-widest mb-1">Empty Stock Alerts</p>
+          <div class="flex items-end gap-2">
+            <h3 id="metric-empty-stock" class="text-4xl font-black drop-shadow-md">0</h3>
+            <span class="text-sm text-slate-400 font-medium mb-1">Types</span>
+          </div>
+        </div>
+
+        <!-- Metric 4: Overdue Returns -->
+        <div id="card-overdue" class="bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl p-5 shadow-lg border border-emerald-400/30 text-white relative overflow-hidden group hover:-translate-y-1 transition-all">
+          <div class="absolute -right-4 -top-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
+            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z"></path><path d="M13 7h-2v6h6v-2h-4z"></path></svg>
+          </div>
+          <div class="flex justify-between items-start">
+            <p class="text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1" id="text-overdue-label">Overdue Returns</p>
+            <div id="indicator-overdue" class="w-2.5 h-2.5 rounded-full bg-emerald-300 hidden"></div>
+          </div>
+          <div class="flex items-end gap-2">
+            <h3 id="metric-overdue" class="text-4xl font-black drop-shadow-md">0</h3>
+            <span class="text-sm text-emerald-200 font-medium mb-1">Borrows</span>
+          </div>
+        </div>
+
       </div>
 
       <!-- Main Inventory Table (Categorized) -->
@@ -296,13 +336,13 @@
       </div>
     </div>
 
-    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
+    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY (30-DAY ROLLING) -->
     <div id="tab-calendar" class="hidden animate-fade-up">
       <div class="glass-card p-6 sm:p-8 rounded-2xl shadow-xl">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
           <div>
-            <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">14-Day Availability Matrix</h2>
-            <p class="text-sm text-slate-500 mt-1">Quick glance of equipment readiness for the next two weeks.</p>
+            <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">30-Day Availability Matrix</h2>
+            <p class="text-sm text-slate-500 mt-1">Quick glance of equipment readiness for the next 30 days.</p>
           </div>
           
           <div class="flex space-x-5 text-xs font-bold uppercase tracking-wider border border-slate-200 p-3 rounded-xl bg-white shadow-sm">
@@ -326,7 +366,6 @@
     let sortAscending = true;
     let editingBorrowId = null;
     let borrowCart = []; 
-    let inventoryChartInstance = null;
     let activeCategoryTab = null; 
     
     // Category Configuration for Theming
@@ -463,19 +502,19 @@
       const borrowSelect = document.getElementById('borrow-item-select');
       const stockSelect = document.getElementById('stock-item-select');
       
-      let chartLabels = [];
-      let chartAvailable = [];
-      let chartDisplay = [];
-      let chartBorrowed = [];
+      // Calculate Command Center Metrics
+      let totalAssetsQty = 0;
+      let totalBorrowedQty = 0;
+      let emptyCategoriesCount = 0;
+      let totalOverdueBorrows = 0;
+      const todayStr = new Date().toISOString().split('T')[0];
 
       const sortedAllItems = [...state.items].sort((a, b) => {
         if(a.category < b.category) return -1;
         if(a.category > b.category) return 1;
-        
         const ownedA = a.storage + a.display;
         const ownedB = b.storage + b.display;
-        if (ownedB !== ownedA) return ownedB - ownedA; // Descending quantity
-        
+        if (ownedB !== ownedA) return ownedB - ownedA;
         return a.name.localeCompare(b.name);
       });
 
@@ -485,13 +524,43 @@
           .reduce((sum, b) => sum + b.qty, 0);
 
         const available = Math.max(0, item.storage - activeBorrowCount); 
-
-        chartLabels.push(item.name);
-        chartAvailable.push(available);
-        chartDisplay.push(item.display);
-        chartBorrowed.push(activeBorrowCount);
+        
+        totalAssetsQty += (item.storage + item.display);
+        if (available === 0 && (item.storage + item.display) > 0) emptyCategoriesCount++;
       });
 
+      state.borrows.forEach(b => {
+        if (b.status === "BORROWED") {
+          totalBorrowedQty += b.qty;
+          if (cleanToIsoDate(b.returnDate) < todayStr) totalOverdueBorrows++;
+        }
+      });
+
+      // Update Metric Cards
+      document.getElementById('metric-total-assets').innerText = totalAssetsQty;
+      document.getElementById('metric-borrowed-out').innerText = totalBorrowedQty;
+      document.getElementById('metric-empty-stock').innerText = emptyCategoriesCount;
+      document.getElementById('metric-overdue').innerText = totalOverdueBorrows;
+
+      // Conditional Styling for Overdue Alerts
+      const overdueCard = document.getElementById('card-overdue');
+      const overdueLabel = document.getElementById('text-overdue-label');
+      const overdueIndicator = document.getElementById('indicator-overdue');
+      
+      if (totalOverdueBorrows > 0) {
+        overdueCard.className = "bg-gradient-to-br from-rose-600 to-red-800 rounded-2xl p-5 shadow-lg border border-rose-400/50 text-white relative overflow-hidden group hover:-translate-y-1 transition-all ring-2 ring-rose-500 ring-offset-2 ring-offset-slate-50";
+        overdueLabel.className = "text-rose-100 text-xs font-bold uppercase tracking-widest mb-1";
+        document.getElementById('metric-overdue').nextElementSibling.className = "text-sm text-rose-200 font-medium mb-1";
+        overdueIndicator.classList.remove('hidden');
+        overdueIndicator.classList.add('bg-rose-300', 'animate-pulse');
+      } else {
+        overdueCard.className = "bg-gradient-to-br from-emerald-600 to-teal-800 rounded-2xl p-5 shadow-lg border border-emerald-400/30 text-white relative overflow-hidden group hover:-translate-y-1 transition-all";
+        overdueLabel.className = "text-emerald-100 text-xs font-bold uppercase tracking-widest mb-1";
+        document.getElementById('metric-overdue').nextElementSibling.className = "text-sm text-emerald-200 font-medium mb-1";
+        overdueIndicator.classList.add('hidden');
+      }
+
+      // Render Dropdowns with OptGroups by Category
       let borrowHTML = '<option value="" disabled selected>Select an item...</option>';
       let stockHTML = '<option value="" disabled selected>Select an item...</option>';
       
@@ -521,8 +590,6 @@
 
       borrowSelect.innerHTML = borrowHTML;
       stockSelect.innerHTML = stockHTML;
-
-      renderChart(chartLabels, chartAvailable, chartDisplay, chartBorrowed);
       
       if(!activeCategoryTab || !uniqueCategories.includes(activeCategoryTab)) {
         activeCategoryTab = uniqueCategories[0] || 'Uncategorized';
@@ -617,33 +684,6 @@
             </td>
           </tr>
         `;
-      });
-    }
-
-    function renderChart(labels, availableData, displayData, borrowedData) {
-      const ctx = document.getElementById('inventoryChart').getContext('2d');
-      if (inventoryChartInstance) { inventoryChartInstance.destroy(); }
-
-      inventoryChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [
-            { label: 'Available (Storage)', data: availableData, backgroundColor: 'rgba(16, 185, 129, 0.85)', hoverBackgroundColor: 'rgba(16, 185, 129, 1)', borderRadius: 4 },
-            { label: 'On Display', data: displayData, backgroundColor: 'rgba(245, 158, 11, 0.85)', hoverBackgroundColor: 'rgba(245, 158, 11, 1)', borderRadius: 4 },
-            { label: 'Borrowed Out', data: borrowedData, backgroundColor: 'rgba(244, 63, 94, 0.85)', hoverBackgroundColor: 'rgba(244, 63, 94, 1)', borderRadius: 4 }
-          ]
-        },
-        options: {
-          responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-          plugins: { legend: { position: 'top', labels: { font: { family: "'Space Grotesk', sans-serif", size: 12, weight: 'bold' }, color: '#475569', usePointStyle: true, boxWidth: 8 } },
-            tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: "'Space Grotesk', sans-serif", size: 14, weight: 'bold' }, bodyFont: { family: "'Space Grotesk', sans-serif", size: 13 }, padding: 12, cornerRadius: 8 }
-          },
-          scales: {
-            x: { stacked: true, grid: { display: false }, ticks: { font: { family: "'Space Grotesk', sans-serif", weight: 'bold' }, color: '#64748b' } },
-            y: { stacked: true, beginAtZero: true, grid: { color: 'rgba(226, 232, 240, 0.5)' }, ticks: { stepSize: 1, font: { family: "'Space Grotesk', sans-serif" }, color: '#64748b' } }
-          }
-        }
       });
     }
 
@@ -934,7 +974,7 @@
       const dates = [];
       const today = new Date();
       today.setHours(0,0,0,0);
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < 30; i++) {
         const d = new Date(today);
         d.setDate(today.getDate() + i);
         dates.push(d);
