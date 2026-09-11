@@ -234,17 +234,29 @@
         </div>
       </div>
 
-      <!-- Active Borrows Table -->
+      <!-- Active Borrows Table with Bulk Return Feature -->
       <div class="glass-card p-6 sm:p-8 rounded-2xl mt-8 border-t-4 border-t-blue-900">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-2 border-b border-slate-100 pb-4">
           <h2 class="text-xl font-extrabold text-slate-900 uppercase tracking-wide">Borrowing History & Logs</h2>
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Click Headers To Sort ⇕</span>
         </div>
         
+        <!-- BULK RETURN BAR -->
+        <div id="bulk-return-bar" class="hidden mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
+          <span class="text-sm font-bold text-emerald-800 ml-2"><span id="bulk-selected-count">0</span> items selected for return</span>
+          <button onclick="handleBulkReturn()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-xs uppercase tracking-widest font-bold shadow hover:bg-emerald-700 transition-colors hover:-translate-y-0.5">
+            Process Bulk Return
+          </button>
+        </div>
+
         <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
           <table class="w-full text-left border-collapse text-sm bg-white">
             <thead>
               <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider cursor-pointer select-none border-b border-slate-200">
+                <!-- Select All Checkbox -->
+                <th class="p-4 w-10 text-center cursor-default">
+                  <input type="checkbox" id="check-all-borrows" onclick="toggleAllChecks(this)" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer hidden">
+                </th>
                 <th onclick="sortTable('borrower')" class="p-4 font-bold hover:text-blue-600 transition-colors">Borrower</th>
                 <th onclick="sortTable('contact')" class="p-4 font-bold hover:text-blue-600 transition-colors">Contact</th>
                 <th onclick="sortTable('item')" class="p-4 font-bold hover:text-blue-600 transition-colors">Item</th>
@@ -323,7 +335,6 @@
             <p class="text-sm text-slate-500 mt-1">Hover over any colored block to see the exact quantity available.</p>
           </div>
           
-          <!-- Interactive Month Navigator -->
           <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
             <button onclick="changeMonth(-1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&lt;</button>
             <div id="calendar-month-label" class="w-36 text-center font-extrabold text-sm uppercase tracking-widest text-slate-800">Month</div>
@@ -354,11 +365,9 @@
     let borrowCart = []; 
     let activeCategoryTab = null; 
     
-    // Calendar View Global Variables
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
 
-    // 2026 Malaysian/Johor Public Holidays
     const publicHolidays2026 = [
       '2026-01-01', '2026-02-17', '2026-02-18', '2026-03-20', '2026-03-21', 
       '2026-05-01', '2026-05-31', '2026-06-01', '2026-08-31', '2026-09-16', 
@@ -416,6 +425,7 @@
       const btn = document.getElementById('btn-auth');
       const navBorrow = document.getElementById('nav-borrow');
       const navStock = document.getElementById('nav-stock');
+      const checkAll = document.getElementById('check-all-borrows');
       if (isAdmin) {
         btn.innerHTML = `<span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></div> Logout Admin</span>`;
         btn.classList.replace('bg-slate-900', 'bg-rose-900');
@@ -423,6 +433,7 @@
         btn.classList.replace('border-slate-700', 'border-rose-700');
         navBorrow.classList.remove('hidden');
         navStock.classList.remove('hidden');
+        if(checkAll) checkAll.classList.remove('hidden');
       } else {
         btn.innerHTML = `Admin Login`;
         btn.classList.replace('bg-rose-900', 'bg-slate-900');
@@ -430,6 +441,7 @@
         btn.classList.replace('border-rose-700', 'border-slate-700');
         navBorrow.classList.add('hidden');
         navStock.classList.add('hidden');
+        if(checkAll) checkAll.classList.add('hidden');
       }
     }
 
@@ -648,18 +660,18 @@
 
         tableBody.innerHTML += `
           <tr class="bg-white hover:bg-slate-50/80 transition duration-150 group border-b border-slate-100">
-            <td class="p-4">
+            <td class="p-5">
               <div class="font-extrabold text-slate-900 text-lg group-hover:text-blue-900 transition-colors">${item.name}</div>
               <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden flex shadow-inner">
                 <div class="${barColor} h-2.5 rounded-full transition-all duration-1000 ease-out" style="width: ${pct}%"></div>
               </div>
               <div class="text-[11px] text-slate-500 font-mono mt-1 font-bold uppercase tracking-wider">${pct}% Ready to Use</div>
             </td>
-            <td class="p-4 text-center font-mono text-lg font-black text-slate-700">${totalOwned}</td>
-            <td class="p-4 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
-            <td class="p-4 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
-            <td class="p-4 text-center font-mono text-base">${faultyBadge}</td>
-            <td class="p-4 text-center group-hover:bg-slate-50 transition-colors">
+            <td class="p-5 text-center font-mono text-lg font-black text-slate-700">${totalOwned}</td>
+            <td class="p-5 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
+            <td class="p-5 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
+            <td class="p-5 text-center font-mono text-base">${faultyBadge}</td>
+            <td class="p-5 text-center group-hover:bg-slate-50 transition-colors">
               <span class="inline-block px-4 py-1.5 rounded-xl font-mono text-xl font-black border shadow-sm ${badgeBg} min-w-[3rem]">
                 ${available}
               </span>
@@ -768,6 +780,60 @@
       return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
     }
 
+    // --- BULK RETURN LOGIC ---
+    function toggleAllChecks(source) {
+      const checkboxes = document.querySelectorAll('.borrow-checkbox');
+      checkboxes.forEach(cb => cb.checked = source.checked);
+      toggleBulkReturnButton();
+    }
+
+    function toggleBulkReturnButton() {
+      const checkedBoxes = document.querySelectorAll('.borrow-checkbox:checked');
+      const count = checkedBoxes.length;
+      const bar = document.getElementById('bulk-return-bar');
+      const countSpan = document.getElementById('bulk-selected-count');
+      
+      if (count > 0) {
+        countSpan.innerText = count;
+        bar.classList.remove('hidden');
+      } else {
+        bar.classList.add('hidden');
+        const checkAll = document.getElementById('check-all-borrows');
+        if(checkAll) checkAll.checked = false;
+      }
+    }
+
+    async function handleBulkReturn() {
+      const checkedBoxes = document.querySelectorAll('.borrow-checkbox:checked');
+      if (checkedBoxes.length === 0) return;
+      
+      if (!confirm(`Are you sure you want to return these ${checkedBoxes.length} items?`)) return;
+      
+      const idsToReturn = Array.from(checkedBoxes).map(cb => cb.value);
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      // Optimistic Update for all selected
+      idsToReturn.forEach(borrowId => {
+        const targetBorrow = state.borrows.find(b => String(b.id) === String(borrowId));
+        if (targetBorrow) {
+          targetBorrow.status = "RETURNED";
+          targetBorrow.actualReturnDate = todayStr;
+        }
+      });
+      
+      document.getElementById('bulk-return-bar').classList.add('hidden');
+      const checkAll = document.getElementById('check-all-borrows');
+      if(checkAll) checkAll.checked = false;
+
+      renderAll(); // Updates UI immediately
+
+      await sendPost({ 
+        action: "RETURN_MULTI_ITEM", 
+        borrowIds: JSON.stringify(idsToReturn), 
+        actualReturnDate: todayStr 
+      });
+    }
+
     function sortTable(columnKey) {
       if (sortColumn === columnKey) { sortAscending = !sortAscending; } 
       else { sortColumn = columnKey; sortAscending = true; }
@@ -799,7 +865,7 @@
       });
 
       if (activeBorrowsList.length === 0) {
-        borrowBody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400 font-medium">No borrow records found.</td></tr>`;
+        borrowBody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400 font-medium">No borrow records found.</td></tr>`;
       } else {
         activeBorrowsList.forEach(b => {
           const item = state.items.find(i => String(i.id) === String(b.itemId));
@@ -811,6 +877,7 @@
           if (isEditing && isAdmin && !isReturned) {
             borrowBody.innerHTML += `
               <tr class="bg-amber-50 border-y-2 border-amber-300">
+                <td class="p-3 text-center"></td>
                 <td class="p-3"><input type="text" id="edit-name-${b.id}" value="${b.borrower}" class="border border-amber-300 p-2 rounded-lg text-sm w-full font-bold outline-none"></td>
                 <td class="p-3"><input type="tel" id="edit-contact-${b.id}" value="${cleanContact}" class="border border-amber-300 p-2 rounded-lg text-sm w-full font-mono outline-none"></td>
                 <td class="p-3 text-sm font-bold text-slate-800">${item ? item.name : 'Unknown'}</td>
@@ -829,6 +896,7 @@
           } else {
             let actionButtons = '';
             let statusBadge = '';
+            let checkboxHtml = '';
             
             if (isReturned) {
               statusBadge = `<span class="bg-slate-200 text-slate-500 text-[10px] font-black px-2 py-1 rounded">RETURNED</span>`;
@@ -840,6 +908,7 @@
                 : `<span class="bg-emerald-100 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2 py-1 rounded">ACTIVE</span>`;
               
               if (isAdmin) {
+                checkboxHtml = `<input type="checkbox" value="${b.id}" class="borrow-checkbox w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer" onchange="toggleBulkReturnButton()">`;
                 actionButtons = `
                  <button onclick="startInlineEdit('${b.id}')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1.5 rounded text-[10px] font-bold transition-colors border border-transparent hover:border-amber-200">EDIT</button>
                  <button onclick="handleReturn('${b.id}')" class="text-emerald-700 hover:text-white bg-emerald-100 hover:bg-emerald-600 px-2 py-1.5 rounded text-[10px] font-bold transition-colors shadow-sm">RETURN</button>`;
@@ -850,6 +919,7 @@
             const rowClass = isReturned ? "bg-slate-50 opacity-60 grayscale-[50%] border-b border-slate-100" : "bg-white hover:bg-blue-50/40 transition duration-150 group border-b border-slate-100";
             borrowBody.innerHTML += `
               <tr class="${rowClass}">
+                <td class="p-4 text-center">${checkboxHtml}</td>
                 <td class="p-4 font-bold text-slate-900 ${isReturned ? '' : 'group-hover:text-blue-900 transition-colors'}">${b.borrower}</td>
                 <td class="p-4 font-mono text-xs text-slate-500">${isAdmin ? (cleanContact || '-') : '<span class="opacity-40">*** Hidden</span>'}</td>
                 <td class="p-4 font-semibold text-slate-700 text-xs">${item ? item.name : 'Unknown'}</td>
@@ -943,7 +1013,6 @@
       
       const activeThemeColor = monthColors[currentCalMonth];
 
-      // Build Date Array for the selected Month
       const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
       const dates = [];
       for(let i=1; i<=daysInMonth; i++) {
