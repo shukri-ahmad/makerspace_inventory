@@ -152,7 +152,7 @@
     <!-- TAB 2: BORROW & RETURN -->
     <div id="tab-borrow" class="hidden animate-fade-up space-y-8">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- LEFT PANEL -->
+        <!-- LEFT PANEL: Entry Form -->
         <div class="lg:col-span-4 space-y-6">
           <div class="glass-card p-6 rounded-2xl">
             <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
@@ -314,7 +314,7 @@
       </div>
     </div>
 
-    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY (MONTH VIEW) -->
+    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
     <div id="tab-calendar" class="hidden animate-fade-up">
       <div class="glass-card p-6 sm:p-8 rounded-2xl shadow-xl">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-slate-100 pb-4">
@@ -358,14 +358,13 @@
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
 
-    // 2026 Malaysian/Johor Public Holidays (YYYY-MM-DD Format)
+    // 2026 Malaysian/Johor Public Holidays
     const publicHolidays2026 = [
       '2026-01-01', '2026-02-17', '2026-02-18', '2026-03-20', '2026-03-21', 
       '2026-05-01', '2026-05-31', '2026-06-01', '2026-08-31', '2026-09-16', 
       '2026-11-08', '2026-12-25'
     ];
     
-    // Category Configuration for Theming
     const categoryTheme = {
       'Robot': { bgWrap: 'bg-purple-50/40', borderWrap: 'border-purple-200', bgHead: 'bg-purple-100/70', textHead: 'text-purple-900', borderHead: 'border-purple-200', tabActive: 'bg-purple-600 text-white shadow-md border-purple-600', tabInactive: 'bg-white text-purple-700 hover:bg-purple-50 border-purple-200' },
       'Microcontroller': { bgWrap: 'bg-emerald-50/40', borderWrap: 'border-emerald-200', bgHead: 'bg-emerald-100/70', textHead: 'text-emerald-900', borderHead: 'border-emerald-200', tabActive: 'bg-emerald-600 text-white shadow-md border-emerald-600', tabInactive: 'bg-white text-emerald-700 hover:bg-emerald-50 border-emerald-200' },
@@ -649,18 +648,18 @@
 
         tableBody.innerHTML += `
           <tr class="bg-white hover:bg-slate-50/80 transition duration-150 group border-b border-slate-100">
-            <td class="p-5">
+            <td class="p-4">
               <div class="font-extrabold text-slate-900 text-lg group-hover:text-blue-900 transition-colors">${item.name}</div>
               <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden flex shadow-inner">
                 <div class="${barColor} h-2.5 rounded-full transition-all duration-1000 ease-out" style="width: ${pct}%"></div>
               </div>
               <div class="text-[11px] text-slate-500 font-mono mt-1 font-bold uppercase tracking-wider">${pct}% Ready to Use</div>
             </td>
-            <td class="p-5 text-center font-mono text-lg font-black text-slate-700">${totalOwned}</td>
-            <td class="p-5 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
-            <td class="p-5 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
-            <td class="p-5 text-center font-mono text-base">${faultyBadge}</td>
-            <td class="p-5 text-center group-hover:bg-slate-50 transition-colors">
+            <td class="p-4 text-center font-mono text-lg font-black text-slate-700">${totalOwned}</td>
+            <td class="p-4 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
+            <td class="p-4 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
+            <td class="p-4 text-center font-mono text-base">${faultyBadge}</td>
+            <td class="p-4 text-center group-hover:bg-slate-50 transition-colors">
               <span class="inline-block px-4 py-1.5 rounded-xl font-mono text-xl font-black border shadow-sm ${badgeBg} min-w-[3rem]">
                 ${available}
               </span>
@@ -973,22 +972,26 @@
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
 
+      const itemActivity = {};
+      state.items.forEach(item => {
+        itemActivity[item.id] = state.borrows
+          .filter(b => String(b.itemId) === String(item.id))
+          .reduce((sum, b) => sum + Number(b.qty), 0);
+      });
+
       const sortedItems = [...state.items].sort((a, b) => {
-        let idxA = targetCategoryOrder.indexOf(a.category); let idxB = targetCategoryOrder.indexOf(b.category);
-        if(idxA === -1) idxA = 999; if(idxB === -1) idxB = 999;
-        if(idxA !== idxB) return idxA - idxB;
-        const ownedA = a.storage + a.display + (a.faulty||0);
-        const ownedB = b.storage + b.display + (b.faulty||0);
-        if (ownedB !== ownedA) return ownedB - ownedA;
-        return a.name.localeCompare(b.name);
+        const actA = itemActivity[a.id] || 0;
+        const actB = itemActivity[b.id] || 0;
+        if (actB !== actA) return actB - actA; 
+        return a.name.localeCompare(b.name);   
       });
 
       sortedItems.forEach(item => {
         const totalUsable = item.storage + item.display; 
         html += `<tr class="hover:bg-blue-50/30 transition group">
-          <td class="p-3 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] z-10 group-hover:text-blue-900 group-hover:bg-blue-50/90 transition-colors">
-            <div class="truncate w-40" title="${item.name}">${item.name}</div>
-            <div class="flex items-center gap-2 mt-1">
+          <td class="px-2 py-1 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] z-10 group-hover:text-blue-900 group-hover:bg-blue-50/90 transition-colors">
+            <div class="truncate w-40 text-xs" title="${item.name}">${item.name}</div>
+            <div class="flex items-center gap-2 mt-0.5">
               <span class="inline-block px-1 py-0.5 bg-slate-200 text-slate-600 text-[8px] font-bold uppercase tracking-wider rounded">${item.category}</span>
             </div>
           </td>`;
@@ -1016,10 +1019,9 @@
           const bgCol = isOffDay ? 'bg-slate-200/50' : ''; 
           const displayVal = totalUsable === 0 ? '-' : available;
 
-          // Added transparent span that turns opaque on hover
           html += `<td class="p-0.5 border-l border-slate-100 ${bgCol}">
-            <div class="group/cell relative w-full h-8 flex items-center justify-center rounded-sm border ${cellStyle} font-mono transition-all cursor-crosshair">
-              <span class="opacity-0 group-hover/cell:opacity-100 transition-opacity font-black text-white text-lg drop-shadow-md z-20 absolute">${displayVal}</span>
+            <div class="group/cell relative w-full h-6 flex items-center justify-center rounded-sm border ${cellStyle} font-mono transition-all cursor-crosshair">
+              <span class="opacity-0 group-hover/cell:opacity-100 transition-opacity font-black text-white text-sm drop-shadow-md z-20 absolute">${displayVal}</span>
             </div>
           </td>`;
         });
