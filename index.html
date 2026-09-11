@@ -152,7 +152,7 @@
     <!-- TAB 2: BORROW & RETURN -->
     <div id="tab-borrow" class="hidden animate-fade-up space-y-8">
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <!-- LEFT PANEL: Entry Form -->
+        <!-- LEFT PANEL -->
         <div class="lg:col-span-4 space-y-6">
           <div class="glass-card p-6 rounded-2xl">
             <div class="flex items-center gap-3 mb-6 border-b border-slate-100 pb-4">
@@ -314,20 +314,27 @@
       </div>
     </div>
 
-    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY -->
+    <!-- TAB 4: CALENDAR / HEATMAP AVAILABILITY (MONTH VIEW) -->
     <div id="tab-calendar" class="hidden animate-fade-up">
       <div class="glass-card p-6 sm:p-8 rounded-2xl shadow-xl">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-100 pb-4">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 border-b border-slate-100 pb-4">
           <div>
-            <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">30-Day Availability Matrix</h2>
-            <p class="text-sm text-slate-500 mt-1">Click any colored box to reveal the exact quantity available on that day.</p>
+            <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">Availability Calendar</h2>
+            <p class="text-sm text-slate-500 mt-1">Hover over any colored block to see the exact quantity available.</p>
           </div>
           
-          <!-- Compact Legend -->
-          <div class="flex space-x-4 text-xs font-bold uppercase tracking-wider border border-slate-200 p-2.5 rounded-xl bg-white shadow-sm">
-            <div class="flex items-center space-x-1.5"><div class="w-3.5 h-3.5 rounded-sm bg-emerald-400 border border-emerald-500"></div><span class="text-slate-600">Available</span></div>
-            <div class="flex items-center space-x-1.5"><div class="w-3.5 h-3.5 rounded-sm bg-amber-400 border border-amber-500"></div><span class="text-slate-600">Low Stock</span></div>
-            <div class="flex items-center space-x-1.5"><div class="w-3.5 h-3.5 rounded-sm bg-rose-500 border border-rose-600"></div><span class="text-slate-600">Empty</span></div>
+          <!-- Interactive Month Navigator -->
+          <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
+            <button onclick="changeMonth(-1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&lt;</button>
+            <div id="calendar-month-label" class="w-36 text-center font-extrabold text-sm uppercase tracking-widest text-slate-800">Month</div>
+            <button onclick="changeMonth(1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&gt;</button>
+          </div>
+
+          <div class="flex space-x-3 text-[10px] font-bold uppercase tracking-wider border border-slate-200 p-2.5 rounded-xl bg-white shadow-sm">
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-emerald-400"></div><span class="text-slate-600">Avail</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-amber-400"></div><span class="text-slate-600">Low</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-rose-500"></div><span class="text-slate-600">Empty</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-black"></div><span class="text-slate-600">Holiday/Off</span></div>
           </div>
         </div>
 
@@ -347,6 +354,18 @@
     let borrowCart = []; 
     let activeCategoryTab = null; 
     
+    // Calendar View Global Variables
+    let currentCalMonth = new Date().getMonth();
+    let currentCalYear = new Date().getFullYear();
+
+    // 2026 Malaysian/Johor Public Holidays (YYYY-MM-DD Format)
+    const publicHolidays2026 = [
+      '2026-01-01', '2026-02-17', '2026-02-18', '2026-03-20', '2026-03-21', 
+      '2026-05-01', '2026-05-31', '2026-06-01', '2026-08-31', '2026-09-16', 
+      '2026-11-08', '2026-12-25'
+    ];
+    
+    // Category Configuration for Theming
     const categoryTheme = {
       'Robot': { bgWrap: 'bg-purple-50/40', borderWrap: 'border-purple-200', bgHead: 'bg-purple-100/70', textHead: 'text-purple-900', borderHead: 'border-purple-200', tabActive: 'bg-purple-600 text-white shadow-md border-purple-600', tabInactive: 'bg-white text-purple-700 hover:bg-purple-50 border-purple-200' },
       'Microcontroller': { bgWrap: 'bg-emerald-50/40', borderWrap: 'border-emerald-200', bgHead: 'bg-emerald-100/70', textHead: 'text-emerald-900', borderHead: 'border-emerald-200', tabActive: 'bg-emerald-600 text-white shadow-md border-emerald-600', tabInactive: 'bg-white text-emerald-700 hover:bg-emerald-50 border-emerald-200' },
@@ -635,7 +654,7 @@
               <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden flex shadow-inner">
                 <div class="${barColor} h-2.5 rounded-full transition-all duration-1000 ease-out" style="width: ${pct}%"></div>
               </div>
-              <div class="text-[10px] text-slate-500 font-mono mt-1 font-bold uppercase tracking-wider">${pct}% Ready to Use</div>
+              <div class="text-[11px] text-slate-500 font-mono mt-1 font-bold uppercase tracking-wider">${pct}% Ready to Use</div>
             </td>
             <td class="p-5 text-center font-mono text-lg font-black text-slate-700">${totalOwned}</td>
             <td class="p-5 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
@@ -737,7 +756,7 @@
     function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
-      const totalOwned = targetItem.storage + targetItem.display; // Faulty is excluded from usable!
+      const totalOwned = targetItem.storage + targetItem.display; 
       const cleanReqStart = cleanToIsoDate(reqStart);
       const cleanReqEnd = cleanToIsoDate(reqEnd);
 
@@ -886,7 +905,7 @@
       await sendPost({ action: "UPDATE_STOCK", itemId: document.getElementById('stock-item-select').value, type: document.getElementById('stock-type').value, location: document.getElementById('stock-location').value, qty: Number(document.getElementById('stock-qty').value), notes: document.getElementById('stock-notes').value });
       
       document.getElementById('stock-form').reset();
-      toggleLocationField(); // Reset UI state
+      toggleLocationField(); 
       btn.innerText = originalText; btn.disabled = false; btn.classList.remove('opacity-75');
     }
 
@@ -904,34 +923,52 @@
       }
     }
 
+    // Month Navigator Logic
+    function changeMonth(offset) {
+      currentCalMonth += offset;
+      if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
+      if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+      renderHeatmap();
+    }
+
     function renderHeatmap() {
       const container = document.getElementById('heatmap-container');
       container.innerHTML = '';
       if (state.items.length === 0) { container.innerHTML = '<p class="text-slate-500 text-center py-8 font-medium">No inventory available to map.</p>'; return; }
 
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthColors = ['bg-blue-800', 'bg-rose-800', 'bg-emerald-800', 'bg-amber-800', 'bg-purple-800', 'bg-cyan-800', 'bg-indigo-800', 'bg-pink-800', 'bg-teal-800', 'bg-orange-800', 'bg-fuchsia-800', 'bg-sky-800'];
+      
+      const calLabel = document.getElementById('calendar-month-label');
+      if(calLabel) calLabel.innerText = `${monthNames[currentCalMonth]} ${currentCalYear}`;
+      
+      const activeThemeColor = monthColors[currentCalMonth];
+
+      // Build Date Array for the selected Month
+      const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
       const dates = [];
-      const today = new Date();
-      today.setHours(0,0,0,0);
-      for (let i = 0; i < 30; i++) {
-        const d = new Date(today);
-        d.setDate(today.getDate() + i);
-        dates.push(d);
+      for(let i=1; i<=daysInMonth; i++) {
+        dates.push(new Date(currentCalYear, currentCalMonth, i));
       }
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-      // Updated Column widths to make the 30-day matrix fit on screen
       let html = `<div class="overflow-x-auto no-scrollbar border-x border-slate-200 rounded-b-xl shadow-inner bg-slate-50">
         <table class="w-full text-center border-collapse">
           <thead>
-            <tr class="bg-slate-900 text-white text-xs uppercase tracking-wider">
-              <th class="p-3 text-left sticky left-0 bg-slate-900 z-10 w-48 shadow-[2px_0_5px_rgba(0,0,0,0.2)] font-extrabold">Equipment</th>`;
+            <tr class="${activeThemeColor} text-white text-xs uppercase tracking-wider transition-colors duration-500">
+              <th class="p-3 text-left sticky left-0 ${activeThemeColor} z-10 w-48 shadow-[2px_0_5px_rgba(0,0,0,0.2)] font-extrabold transition-colors duration-500">Equipment Name</th>`;
       
       dates.forEach(d => { 
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        html += `<th class="p-1 min-w-[36px] border-l border-slate-700 ${isWeekend ? 'bg-slate-800' : ''}">
-          <div class="text-[9px] ${isWeekend ? 'text-amber-400' : 'text-slate-400'} font-bold mb-0.5">${dayNames[d.getDay()].substring(0,3)}</div>
-          <div class="font-mono text-[10px] leading-none">${String(d.getDate()).padStart(2,'0')}</div>
-          <div class="font-mono text-[8px] text-slate-500 leading-none">${String(d.getMonth()+1).padStart(2,'0')}</div>
+        const isHoliday = publicHolidays2026.includes(dateStr);
+        const isOffDay = isWeekend || isHoliday;
+        
+        const headClass = isOffDay ? 'bg-black text-slate-300 border-black' : `${activeThemeColor} border-white/20`;
+
+        html += `<th class="p-1 min-w-[36px] border-l ${headClass} transition-colors duration-500">
+          <div class="text-[9px] font-bold mb-0.5 opacity-80">${dayNames[d.getDay()].substring(0,3)}</div>
+          <div class="font-mono text-[11px] font-black leading-none">${String(d.getDate()).padStart(2,'0')}</div>
         </th>`; 
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
@@ -959,6 +996,8 @@
         dates.forEach(d => {
           const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          const isHoliday = publicHolidays2026.includes(dateStr);
+          const isOffDay = isWeekend || isHoliday;
 
           const usedQty = state.borrows.reduce((sum, b) => {
             if (String(b.itemId) === String(item.id) && b.status === "BORROWED") {
@@ -969,19 +1008,18 @@
 
           const available = Math.max(0, item.storage - usedQty);
           
-          // Updated to solid colors
           let cellStyle = 'bg-emerald-400 border-emerald-500 text-emerald-900'; 
           if (totalUsable === 0) cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
-          else if (available === 0) cellStyle = 'bg-rose-500 border-rose-600 text-white relative z-10'; 
+          else if (available === 0) cellStyle = 'bg-rose-500 border-rose-600 text-white'; 
           else if (available < totalUsable * 0.5) cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
 
+          const bgCol = isOffDay ? 'bg-slate-200/50' : ''; 
           const displayVal = totalUsable === 0 ? '-' : available;
 
-          // Added Javascript onClick to toggle the inner text
-          html += `<td class="p-0.5 border-l border-slate-100 ${isWeekend ? 'bg-slate-50' : ''}">
-            <div onclick="this.textContent = this.textContent ? '' : '${displayVal}'" 
-                 class="w-full h-8 flex items-center justify-center rounded-sm border ${cellStyle} font-mono text-xs font-bold transition-all cursor-pointer select-none hover:opacity-80 shadow-sm"
-                 title="Click to reveal count">
+          // Added transparent span that turns opaque on hover
+          html += `<td class="p-0.5 border-l border-slate-100 ${bgCol}">
+            <div class="group/cell relative w-full h-8 flex items-center justify-center rounded-sm border ${cellStyle} font-mono transition-all cursor-crosshair">
+              <span class="opacity-0 group-hover/cell:opacity-100 transition-opacity font-black text-white text-lg drop-shadow-md z-20 absolute">${displayVal}</span>
             </div>
           </td>`;
         });
