@@ -323,7 +323,7 @@
     let editingBorrowId = null;
     let borrowCart = []; 
     let inventoryChartInstance = null;
-    let activeCategoryTab = null; // Track current active tab in dashboard
+    let activeCategoryTab = null; 
     
     // Category Configuration for Theming
     const categoryTheme = {
@@ -427,7 +427,6 @@
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
         
-        // Ensure category defaults if missing in DB
         state.items.forEach(i => i.category = i.category || 'Uncategorized');
         
         renderAll();
@@ -465,7 +464,6 @@
     }
 
     function renderAll() {
-      // 1. Prepare Dropdowns & Chart Data
       const borrowSelect = document.getElementById('borrow-item-select');
       const stockSelect = document.getElementById('stock-item-select');
       
@@ -474,9 +472,15 @@
       let chartDisplay = [];
       let chartBorrowed = [];
 
+      // Sort logic updated: Order by Category -> then by Total Owned (Highest First) -> then by Name
       const sortedAllItems = [...state.items].sort((a, b) => {
         if(a.category < b.category) return -1;
         if(a.category > b.category) return 1;
+        
+        const ownedA = a.storage + a.display;
+        const ownedB = b.storage + b.display;
+        if (ownedB !== ownedA) return ownedB - ownedA; // Descending quantity
+        
         return a.name.localeCompare(b.name);
       });
 
@@ -493,7 +497,6 @@
         chartBorrowed.push(activeBorrowCount);
       });
 
-      // Render Dropdowns with OptGroups by Category
       let borrowHTML = '<option value="" disabled selected>Select an item...</option>';
       let stockHTML = '<option value="" disabled selected>Select an item...</option>';
       
@@ -526,7 +529,6 @@
 
       renderChart(chartLabels, chartAvailable, chartDisplay, chartBorrowed);
       
-      // Initialize active tab logic
       if(!activeCategoryTab || !uniqueCategories.includes(activeCategoryTab)) {
         activeCategoryTab = uniqueCategories[0] || 'Uncategorized';
       }
@@ -555,7 +557,6 @@
 
     function changeDashboardTab(catName) {
       activeCategoryTab = catName;
-      // Re-render tabs to update active states
       const uniqueCategories = [...new Set(state.items.map(i => i.category))];
       uniqueCategories.sort((a, b) => {
         let idxA = targetCategoryOrder.indexOf(a); let idxB = targetCategoryOrder.indexOf(b);
@@ -570,11 +571,16 @@
       const tableBody = document.getElementById('inventory-table-body');
       tableBody.innerHTML = '';
 
-      const filteredItems = state.items.filter(i => i.category === activeCategoryTab).sort((a,b) => a.name.localeCompare(b.name));
+      // Sorting: Highest "Total Owned" first, then alphabetically
+      const filteredItems = state.items.filter(i => i.category === activeCategoryTab).sort((a,b) => {
+        const ownedA = a.storage + a.display;
+        const ownedB = b.storage + b.display;
+        if (ownedB !== ownedA) return ownedB - ownedA; // Descending
+        return a.name.localeCompare(b.name);
+      });
       
       const theme = categoryTheme[activeCategoryTab] || categoryTheme['default'];
       
-      // Apply theme to wrapper and header
       const wrapper = document.getElementById('category-table-wrapper');
       wrapper.className = `overflow-x-auto rounded-xl border shadow-sm transition-all duration-300 ${theme.bgWrap} ${theme.borderWrap}`;
       
@@ -985,10 +991,16 @@
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
 
+      // Sorting: Highest "Total Owned" first, then alphabetically
       const sortedItems = [...state.items].sort((a, b) => {
         let idxA = targetCategoryOrder.indexOf(a.category); let idxB = targetCategoryOrder.indexOf(b.category);
         if(idxA === -1) idxA = 999; if(idxB === -1) idxB = 999;
         if(idxA !== idxB) return idxA - idxB;
+        
+        const ownedA = a.storage + a.display;
+        const ownedB = b.storage + b.display;
+        if (ownedB !== ownedA) return ownedB - ownedA; // Descending quantity
+
         return a.name.localeCompare(b.name);
       });
 
