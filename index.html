@@ -125,10 +125,8 @@
           </div>
         </div>
         
-        <!-- Category Tabs -->
         <div id="category-tabs-container" class="flex flex-wrap gap-2 mb-6"></div>
 
-        <!-- Table Wrapper -->
         <div id="category-table-wrapper" class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm transition-all duration-300">
           <table class="w-full text-left border-collapse bg-white">
             <thead id="category-table-head" class="bg-slate-100 text-slate-900 border-b border-slate-200 transition-all duration-300">
@@ -241,7 +239,6 @@
           <span class="text-xs font-bold text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">Click Headers To Sort ⇕</span>
         </div>
         
-        <!-- BULK RETURN BAR -->
         <div id="bulk-return-bar" class="hidden mb-4 bg-emerald-50 border border-emerald-200 rounded-xl p-3 flex justify-between items-center shadow-sm">
           <span class="text-sm font-bold text-emerald-800 ml-2"><span id="bulk-selected-count">0</span> items selected for return</span>
           <button onclick="handleBulkReturn()" class="bg-emerald-600 text-white px-5 py-2 rounded-lg text-xs uppercase tracking-widest font-bold shadow hover:bg-emerald-700 transition-colors hover:-translate-y-0.5">
@@ -253,7 +250,6 @@
           <table class="w-full text-left border-collapse text-sm bg-white">
             <thead>
               <tr class="bg-slate-50 text-slate-600 text-[11px] uppercase tracking-wider cursor-pointer select-none border-b border-slate-200">
-                <!-- Select All Checkbox -->
                 <th class="p-4 w-10 text-center cursor-default">
                   <input type="checkbox" id="check-all-borrows" onclick="toggleAllChecks(this)" class="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer hidden">
                 </th>
@@ -335,6 +331,7 @@
             <p class="text-sm text-slate-500 mt-1">Hover over any colored block to see the exact quantity available.</p>
           </div>
           
+          <!-- Interactive Month Navigator -->
           <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
             <button onclick="changeMonth(-1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&lt;</button>
             <div id="calendar-month-label" class="w-36 text-center font-extrabold text-sm uppercase tracking-widest text-slate-800">Month</div>
@@ -483,25 +480,35 @@
       }
     }
 
+    // --- FIX: UPDATED SWITCHTAB LOGIC TO PRESERVE "HIDDEN" CLASS ON SECURE BUTTONS ---
     function switchTab(tabName) {
       const tabs = ['dashboard', 'borrow', 'stock', 'calendar'];
+      
+      // 1. Reset styling on all tab contents and nav buttons
       tabs.forEach(t => {
         const el = document.getElementById(`tab-${t}`);
         el.classList.add('hidden');
         el.classList.remove('animate-fade-up');
-        void el.offsetWidth; 
+        
         const navEl = document.getElementById(`nav-${t}`);
         if(navEl) {
-           navEl.className = "px-5 py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition-all hover:-translate-y-0.5";
-           if(t === 'dashboard') navEl.className += " border border-transparent";
+           navEl.classList.remove('bg-amber-500', 'text-blue-950', 'shadow-md');
+           navEl.classList.add('hover:bg-blue-800', 'text-blue-100');
         }
       });
+      
+      // 2. Activate specific tab content
       const target = document.getElementById(`tab-${tabName}`);
       target.classList.remove('hidden');
       target.classList.add('animate-fade-up');
       
+      // 3. Highlight specific active nav button
       const activeNav = document.getElementById(`nav-${tabName}`);
-      if(activeNav) activeNav.className = "px-5 py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider bg-amber-500 text-blue-950 shadow-md transition-all hover:-translate-y-0.5";
+      if(activeNav) {
+        activeNav.classList.remove('hover:bg-blue-800', 'text-blue-100');
+        activeNav.classList.add('bg-amber-500', 'text-blue-950', 'shadow-md');
+      }
+      
       if(tabName === 'calendar') renderHeatmap();
     }
 
@@ -780,7 +787,6 @@
       return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
     }
 
-    // --- BULK RETURN LOGIC ---
     function toggleAllChecks(source) {
       const checkboxes = document.querySelectorAll('.borrow-checkbox');
       checkboxes.forEach(cb => cb.checked = source.checked);
@@ -812,7 +818,6 @@
       const idsToReturn = Array.from(checkedBoxes).map(cb => cb.value);
       const todayStr = new Date().toISOString().split('T')[0];
       
-      // Optimistic Update for all selected
       idsToReturn.forEach(borrowId => {
         const targetBorrow = state.borrows.find(b => String(b.id) === String(borrowId));
         if (targetBorrow) {
@@ -825,13 +830,8 @@
       const checkAll = document.getElementById('check-all-borrows');
       if(checkAll) checkAll.checked = false;
 
-      renderAll(); // Updates UI immediately
-
-      await sendPost({ 
-        action: "RETURN_MULTI_ITEM", 
-        borrowIds: JSON.stringify(idsToReturn), 
-        actualReturnDate: todayStr 
-      });
+      renderAll(); 
+      await sendPost({ action: "RETURN_MULTI_ITEM", borrowIds: JSON.stringify(idsToReturn), actualReturnDate: todayStr });
     }
 
     function sortTable(columnKey) {
@@ -992,7 +992,6 @@
       }
     }
 
-    // Month Navigator Logic
     function changeMonth(offset) {
       currentCalMonth += offset;
       if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
