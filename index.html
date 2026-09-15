@@ -145,8 +145,9 @@
                 <th class="p-4 text-center font-extrabold text-blue-900">Total Owned</th>
                 <th class="p-4 text-center font-bold">In Storage</th>
                 <th class="p-4 text-center font-bold">Display</th>
-                <th class="p-4 text-center font-bold text-rose-600">Maintenance</th>
+                <!-- BUG FIX: Swapped Borrowed and Maintenance Headers -->
                 <th class="p-4 text-center font-bold text-amber-600">Borrowed</th>
+                <th class="p-4 text-center font-bold text-rose-600">Maintenance</th>
                 <th class="p-4 text-center font-extrabold text-emerald-800 bg-emerald-50/50 border-l border-emerald-100">Available Now</th>
               </tr>
             </thead>
@@ -573,7 +574,6 @@
         catItems.forEach(item => {
           const activeBorrowCount = state.borrows.filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED").reduce((sum, b) => sum + b.qty, 0);
           
-          // FIX: Available = (Storage + Display) - Borrows
           const totalUsable = item.storage + item.display;
           const available = Math.max(0, totalUsable - activeBorrowCount); 
           
@@ -667,7 +667,6 @@
           .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
           .reduce((sum, b) => sum + b.qty, 0);
 
-        // FIX: Available = (Storage + Display) - Borrows
         const totalUsable = item.storage + item.display;
         const available = Math.max(0, totalUsable - activeBorrowCount); 
         
@@ -793,7 +792,6 @@
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
       
-      // FIX: Available = (Storage + Display) - Borrows
       const baseCapacity = targetItem.storage + targetItem.display; 
 
       const cleanReqStart = cleanToIsoDate(reqStart);
@@ -996,7 +994,6 @@
       await sendPost({ action: "UPDATE_STOCK", itemId: document.getElementById('stock-item-select').value, type: document.getElementById('stock-type').value, location: document.getElementById('stock-location').value, qty: Number(document.getElementById('stock-qty').value), notes: document.getElementById('stock-notes').value });
       
       document.getElementById('stock-form').reset();
-      toggleLocationField(); 
       btn.innerText = originalText; btn.disabled = false; btn.classList.remove('opacity-75');
     }
 
@@ -1098,7 +1095,6 @@
             return sum;
           }, 0);
 
-          // FIX: Available = (Storage + Display) - Borrows
           const baseCapacity = item.storage + item.display;
           const available = Math.max(0, baseCapacity - usedQty);
           
