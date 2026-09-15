@@ -118,29 +118,40 @@
 
       <!-- Main Inventory Table -->
       <div class="glass-card rounded-2xl p-6 sm:p-8">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-4">
+        
+        <!-- Header with Live Search Bar -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <div>
             <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wider">Inventory Status</h2>
-            <p class="text-slate-500 text-sm mt-1">Select a category below to view specific equipment.</p>
+            <p class="text-slate-500 text-sm mt-1">Select a category or search for specific equipment.</p>
+          </div>
+          <div class="relative w-full sm:w-80">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+              <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </div>
+            <input type="text" id="global-search" oninput="handleSearch(this.value)" placeholder="Search inventory..." class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 bg-white focus:ring-2 focus:ring-amber-400 focus:border-amber-400 transition-all outline-none text-sm font-bold text-slate-700 shadow-sm placeholder:font-medium placeholder:text-slate-400">
           </div>
         </div>
         
-        <div id="category-tabs-container" class="flex flex-wrap gap-2 mb-6"></div>
+        <!-- Category Tabs -->
+        <div id="category-tabs-container" class="flex flex-wrap gap-2 mb-6 transition-opacity duration-300"></div>
 
+        <!-- Table Wrapper -->
         <div id="category-table-wrapper" class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm transition-all duration-300">
           <table class="w-full text-left border-collapse bg-white">
             <thead id="category-table-head" class="bg-slate-100 text-slate-900 border-b border-slate-200 transition-all duration-300">
               <tr class="text-[11px] uppercase tracking-wider">
                 <th class="p-4 font-extrabold">Equipment Name</th>
-                <th class="p-4 text-center font-extrabold">Total Owned</th>
+                <th class="p-4 text-center font-extrabold text-blue-900">Total Owned</th>
+                <th class="p-4 text-center font-bold">In Storage</th>
                 <th class="p-4 text-center font-bold">Display</th>
-                <th class="p-4 text-center font-bold text-amber-600">Borrowed</th>
                 <th class="p-4 text-center font-bold text-rose-600">Maintenance</th>
-                <th class="p-4 text-center font-extrabold">Available</th>
+                <th class="p-4 text-center font-bold text-amber-600">Borrowed</th>
+                <th class="p-4 text-center font-extrabold text-emerald-800 bg-emerald-50/50 border-l border-emerald-100">Available Now</th>
               </tr>
             </thead>
             <tbody id="inventory-table-body" class="divide-y divide-slate-100 text-sm">
-              <tr><td colspan="6" class="p-8 text-center text-slate-400 font-medium">Loading equipment data...</td></tr>
+              <tr><td colspan="7" class="p-8 text-center text-slate-400 font-medium">Loading equipment data...</td></tr>
             </tbody>
           </table>
         </div>
@@ -277,32 +288,31 @@
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
           </div>
           <h2 class="text-2xl font-extrabold text-slate-900 uppercase tracking-wide">Manage Stock & Repairs</h2>
-          <p class="text-sm text-slate-500 mt-2">Log new inventory or move items to Maintenance.</p>
+          <p class="text-sm text-slate-500 mt-2">Log new inventory, display units, or maintenance.</p>
         </div>
         
-        <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-5">
+        <form id="stock-form" onsubmit="handleStockSubmit(event)" class="space-y-6">
           <div>
             <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Select Equipment</label>
             <select id="stock-item-select" required class="w-full border-slate-300 p-3 rounded-xl bg-slate-50 input-glow transition-all text-sm outline-none border"></select>
           </div>
           
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Action Type</label>
-              <select id="stock-type" onchange="toggleLocationField()" class="w-full border-slate-300 p-3 rounded-xl bg-slate-50 input-glow transition-all text-sm outline-none border font-bold text-blue-900">
-                <option value="ADD">Add (+) New Stock</option>
-                <option value="MINUS">Deduct (-) Lost/Missing</option>
+          <div>
+            <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Action Type</label>
+            <select id="stock-type" class="w-full border-slate-300 p-3 rounded-xl bg-slate-50 input-glow transition-all text-sm outline-none border font-bold text-blue-900">
+              <optgroup label="Purchase & Inventory">
+                <option value="ADD">Add (+) New Purchase</option>
+                <option value="MINUS">Deduct (-) Lost / Discarded</option>
+              </optgroup>
+              <optgroup label="Maintenance">
                 <option value="MARK_FAULTY">Move to Faulty (Needs Repair)</option>
-                <option value="MARK_REPAIRED">Mark as Fixed (Back to Storage)</option>
-              </select>
-            </div>
-            <div id="location-wrapper">
-              <label class="block text-xs font-bold uppercase text-slate-600 mb-1.5">Location</label>
-              <select id="stock-location" class="w-full border-slate-300 p-3 rounded-xl bg-slate-50 input-glow transition-all text-sm outline-none border">
-                <option value="Storage">Storage Room</option>
-                <option value="Display">Display / Demo</option>
-              </select>
-            </div>
+                <option value="MARK_REPAIRED">Mark as Repaired (Back to Storage)</option>
+              </optgroup>
+              <optgroup label="Display Units">
+                <option value="ADD_DISPLAY">Move to Display Rack</option>
+                <option value="REMOVE_DISPLAY">Return from Display Rack</option>
+              </optgroup>
+            </select>
           </div>
           
           <div class="grid grid-cols-3 gap-4">
@@ -331,7 +341,6 @@
             <p class="text-sm text-slate-500 mt-1">Hover over any colored block to see the exact quantity available.</p>
           </div>
           
-          <!-- Interactive Month Navigator -->
           <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
             <button onclick="changeMonth(-1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&lt;</button>
             <div id="calendar-month-label" class="w-36 text-center font-extrabold text-sm uppercase tracking-widest text-slate-800">Month</div>
@@ -353,7 +362,8 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxCc-Xk27N6ihyEkqiKSo-uz_yAauFW06UksR2zvKBKRiSOY2whBdj5XZRJbeyua8Ar-Q/exec";
+    // --- UPDATED V2 API URL ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbxRbpM6rmKReMN95Nwy-cThcU3Sd8BbZhV1n71uTsguEr1uQYdsCh_R46Jy5GprJcH2Ig/exec";
 
     let state = { items: [], borrows: [] };
     let sortColumn = 'status';
@@ -361,6 +371,7 @@
     let editingBorrowId = null;
     let borrowCart = []; 
     let activeCategoryTab = null; 
+    let globalSearchQuery = ''; 
     
     let currentCalMonth = new Date().getMonth();
     let currentCalYear = new Date().getFullYear();
@@ -385,16 +396,6 @@
     let adminPin = sessionStorage.getItem('adminPin');
     let isAdmin = !!adminPin;
     updateAuthUI();
-
-    function toggleLocationField() {
-      const type = document.getElementById('stock-type').value;
-      const wrap = document.getElementById('location-wrapper');
-      if(type === 'MARK_FAULTY' || type === 'MARK_REPAIRED') {
-        wrap.classList.add('opacity-30', 'pointer-events-none');
-      } else {
-        wrap.classList.remove('opacity-30', 'pointer-events-none');
-      }
-    }
 
     function toggleAuth() {
       if (isAdmin) {
@@ -480,35 +481,28 @@
       }
     }
 
-    // --- FIX: UPDATED SWITCHTAB LOGIC TO PRESERVE "HIDDEN" CLASS ON SECURE BUTTONS ---
     function switchTab(tabName) {
       const tabs = ['dashboard', 'borrow', 'stock', 'calendar'];
-      
-      // 1. Reset styling on all tab contents and nav buttons
       tabs.forEach(t => {
         const el = document.getElementById(`tab-${t}`);
         el.classList.add('hidden');
         el.classList.remove('animate-fade-up');
-        
+        void el.offsetWidth; 
         const navEl = document.getElementById(`nav-${t}`);
         if(navEl) {
            navEl.classList.remove('bg-amber-500', 'text-blue-950', 'shadow-md');
            navEl.classList.add('hover:bg-blue-800', 'text-blue-100');
         }
       });
-      
-      // 2. Activate specific tab content
       const target = document.getElementById(`tab-${tabName}`);
       target.classList.remove('hidden');
       target.classList.add('animate-fade-up');
       
-      // 3. Highlight specific active nav button
       const activeNav = document.getElementById(`nav-${tabName}`);
       if(activeNav) {
         activeNav.classList.remove('hover:bg-blue-800', 'text-blue-100');
         activeNav.classList.add('bg-amber-500', 'text-blue-950', 'shadow-md');
       }
-      
       if(tabName === 'calendar') renderHeatmap();
     }
 
@@ -525,15 +519,13 @@
       const sortedAllItems = [...state.items].sort((a, b) => {
         if(a.category < b.category) return -1;
         if(a.category > b.category) return 1;
-        const ownedA = a.storage + a.display + (a.faulty||0);
-        const ownedB = b.storage + b.display + (b.faulty||0);
-        if (ownedB !== ownedA) return ownedB - ownedA;
+        if (b.owned !== a.owned) return b.owned - a.owned;
         return a.name.localeCompare(b.name);
       });
 
       sortedAllItems.forEach(item => {
-        totalAssetsQty += (item.storage + item.display + (item.faulty||0));
-        faultyQtyCount += (item.faulty||0);
+        totalAssetsQty += item.owned;
+        faultyQtyCount += item.faulty;
       });
 
       state.borrows.forEach(b => {
@@ -614,6 +606,9 @@
 
     function changeDashboardTab(catName) {
       activeCategoryTab = catName;
+      globalSearchQuery = '';
+      document.getElementById('global-search').value = '';
+      
       const uniqueCategories = [...new Set(state.items.map(i => i.category))];
       uniqueCategories.sort((a, b) => {
         let idxA = targetCategoryOrder.indexOf(a); let idxB = targetCategoryOrder.indexOf(b);
@@ -624,25 +619,43 @@
       renderDashboardTable();
     }
 
+    function handleSearch(query) {
+      globalSearchQuery = query.toLowerCase().trim();
+      renderDashboardTable();
+    }
+
     function renderDashboardTable() {
       const tableBody = document.getElementById('inventory-table-body');
       tableBody.innerHTML = '';
-
-      const filteredItems = state.items.filter(i => i.category === activeCategoryTab).sort((a,b) => {
-        const ownedA = a.storage + a.display + (a.faulty||0);
-        const ownedB = b.storage + b.display + (b.faulty||0);
-        if (ownedB !== ownedA) return ownedB - ownedA; 
-        return a.name.localeCompare(b.name);
-      });
       
-      const theme = categoryTheme[activeCategoryTab] || categoryTheme['default'];
+      let filteredItems = [];
+      let currentTheme = categoryTheme['default']; 
+
+      if (globalSearchQuery !== '') {
+        filteredItems = state.items.filter(i => 
+          i.name.toLowerCase().includes(globalSearchQuery) || 
+          i.category.toLowerCase().includes(globalSearchQuery)
+        ).sort((a,b) => {
+          if (b.owned !== a.owned) return b.owned - a.owned; 
+          return a.name.localeCompare(b.name);
+        });
+        document.getElementById('category-tabs-container').classList.add('opacity-40', 'pointer-events-none');
+      } else {
+        filteredItems = state.items.filter(i => i.category === activeCategoryTab).sort((a,b) => {
+          if (b.owned !== a.owned) return b.owned - a.owned; 
+          return a.name.localeCompare(b.name);
+        });
+        currentTheme = categoryTheme[activeCategoryTab] || categoryTheme['default'];
+        document.getElementById('category-tabs-container').classList.remove('opacity-40', 'pointer-events-none');
+      }
+      
       const wrapper = document.getElementById('category-table-wrapper');
-      wrapper.className = `overflow-x-auto rounded-xl border shadow-sm transition-all duration-300 ${theme.bgWrap} ${theme.borderWrap}`;
+      wrapper.className = `overflow-x-auto rounded-xl border shadow-sm transition-all duration-300 ${currentTheme.bgWrap} ${currentTheme.borderWrap}`;
       const thead = document.getElementById('category-table-head');
-      thead.className = `${theme.bgHead} ${theme.textHead} border-b ${theme.borderHead} transition-all duration-300`;
+      thead.className = `${currentTheme.bgHead} ${currentTheme.textHead} border-b ${currentTheme.borderHead} transition-all duration-300`;
 
       if (filteredItems.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-500 font-medium">No equipment found in this category.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 font-medium">No equipment found matching your search.</td></tr>`;
         return;
       }
 
@@ -651,13 +664,14 @@
           .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
           .reduce((sum, b) => sum + b.qty, 0);
 
-        const totalOwned = item.storage + item.display + (item.faulty||0);
-        const available = Math.max(0, item.storage - activeBorrowCount); 
-        const usableOwned = item.storage + item.display;
-        const pct = usableOwned > 0 ? Math.max(0, Math.min(100, Math.round((available / usableOwned) * 100))) : 0;
+        const totalOwned = item.storage;
+        const inCabinet = totalOwned - item.display - (item.faulty||0);
+        const available = Math.max(0, inCabinet - activeBorrowCount); 
+        
+        const pct = totalOwned > 0 ? Math.max(0, Math.min(100, Math.round((available / totalOwned) * 100))) : 0;
 
         let barColor = 'bg-gradient-to-r from-emerald-400 to-emerald-500';
-        let badgeBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        let badgeBg = 'bg-blue-50 text-blue-800 border-blue-200';
         if (pct < 20) { barColor = 'bg-gradient-to-r from-rose-500 to-rose-600'; badgeBg = 'bg-rose-50 text-rose-700 border-rose-200'; } 
         else if (pct <= 50) { barColor = 'bg-gradient-to-r from-amber-400 to-amber-500'; badgeBg = 'bg-amber-50 text-amber-700 border-amber-200'; }
 
@@ -667,18 +681,19 @@
 
         tableBody.innerHTML += `
           <tr class="bg-white hover:bg-slate-50/80 transition duration-150 group border-b border-slate-100">
-            <td class="p-5">
+            <td class="p-4">
               <div class="font-extrabold text-slate-900 text-lg group-hover:text-blue-900 transition-colors">${item.name}</div>
+              <span class="inline-block mt-1 px-1.5 py-0.5 bg-slate-200 text-slate-600 text-[9px] font-bold uppercase tracking-wider rounded">${item.category}</span>
               <div class="w-full bg-slate-100 h-2.5 rounded-full mt-2 overflow-hidden flex shadow-inner">
                 <div class="${barColor} h-2.5 rounded-full transition-all duration-1000 ease-out" style="width: ${pct}%"></div>
               </div>
-              <div class="text-[11px] text-slate-500 font-mono mt-1 font-bold uppercase tracking-wider">${pct}% Ready to Use</div>
             </td>
-            <td class="p-5 text-center font-mono text-lg font-black text-slate-700">${totalOwned}</td>
-            <td class="p-5 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
-            <td class="p-5 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
-            <td class="p-5 text-center font-mono text-base">${faultyBadge}</td>
-            <td class="p-5 text-center group-hover:bg-slate-50 transition-colors">
+            <td class="p-4 text-center font-mono text-lg font-black text-blue-900">${item.owned}</td>
+            <td class="p-4 text-center font-mono text-lg font-bold text-slate-700 bg-slate-50/50">${item.storage}</td>
+            <td class="p-4 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
+            <td class="p-4 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
+            <td class="p-4 text-center font-mono text-base">${faultyBadge}</td>
+            <td class="p-4 text-center bg-emerald-50/30 group-hover:bg-white transition-colors border-l border-emerald-50">
               <span class="inline-block px-4 py-1.5 rounded-xl font-mono text-xl font-black border shadow-sm ${badgeBg} min-w-[3rem]">
                 ${available}
               </span>
@@ -774,7 +789,7 @@
     function checkAvailabilityForDates(itemId, requestedQty, reqStart, reqEnd) {
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
-      const totalOwned = targetItem.storage + targetItem.display; 
+      
       const cleanReqStart = cleanToIsoDate(reqStart);
       const cleanReqEnd = cleanToIsoDate(reqEnd);
 
@@ -784,7 +799,7 @@
       });
       const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
       const availableForDates = targetItem.storage - maxReservedQty; 
-      return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: totalOwned };
+      return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: targetItem.owned };
     }
 
     function toggleAllChecks(source) {
@@ -1055,7 +1070,6 @@
       });
 
       sortedItems.forEach(item => {
-        const totalUsable = item.storage + item.display; 
         html += `<tr class="hover:bg-blue-50/30 transition group">
           <td class="px-2 py-1 text-left font-bold text-slate-900 sticky left-0 bg-white shadow-[2px_0_5px_rgba(0,0,0,0.05)] z-10 group-hover:text-blue-900 group-hover:bg-blue-50/90 transition-colors">
             <div class="truncate w-40 text-xs" title="${item.name}">${item.name}</div>
@@ -1080,12 +1094,12 @@
           const available = Math.max(0, item.storage - usedQty);
           
           let cellStyle = 'bg-emerald-400 border-emerald-500 text-emerald-900'; 
-          if (totalUsable === 0) cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
+          if (item.storage === 0) cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
           else if (available === 0) cellStyle = 'bg-rose-500 border-rose-600 text-white'; 
-          else if (available < totalUsable * 0.5) cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
+          else if (available < item.storage * 0.5) cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
 
           const bgCol = isOffDay ? 'bg-slate-200/50' : ''; 
-          const displayVal = totalUsable === 0 ? '-' : available;
+          const displayVal = item.storage === 0 ? '-' : available;
 
           html += `<td class="p-0.5 border-l border-slate-100 ${bgCol}">
             <div class="group/cell relative w-full h-6 flex items-center justify-center rounded-sm border ${cellStyle} font-mono transition-all cursor-crosshair">
