@@ -143,11 +143,11 @@
               <tr class="text-[11px] uppercase tracking-wider">
                 <th class="p-4 font-extrabold">Equipment Name</th>
                 <th class="p-4 text-center font-extrabold text-blue-900">Total Owned</th>
+                <th class="p-4 text-center font-bold">In Storage</th>
                 <th class="p-4 text-center font-bold">Display</th>
                 <th class="p-4 text-center font-bold text-amber-600">Borrowed</th>
                 <th class="p-4 text-center font-bold text-rose-600">Maintenance</th>
-                <th class="p-4 text-center font-bold text-slate-700 border-l border-slate-200">Live Storage</th>
-                <th class="p-4 text-center font-extrabold text-emerald-800 bg-emerald-50/50">Available Now</th>
+                <th class="p-4 text-center font-extrabold text-emerald-800 bg-emerald-50/50 border-l border-emerald-100">Available Now</th>
               </tr>
             </thead>
             <tbody id="inventory-table-body" class="divide-y divide-slate-100 text-sm">
@@ -573,7 +573,6 @@
         catItems.forEach(item => {
           const activeBorrowCount = state.borrows.filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED").reduce((sum, b) => sum + b.qty, 0);
           
-          // MATH FIX: Real-world Availability
           const totalUsable = item.owned - (item.faulty || 0);
           const available = Math.max(0, totalUsable - activeBorrowCount); 
           
@@ -667,10 +666,8 @@
           .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
           .reduce((sum, b) => sum + b.qty, 0);
 
-        // MATH FIX: Real-world Availability and Live Storage
         const totalUsable = item.owned - (item.faulty || 0);
         const available = Math.max(0, totalUsable - activeBorrowCount); 
-        const liveStorage = Math.max(0, available - item.display);
         
         const pct = item.owned > 0 ? Math.max(0, Math.min(100, Math.round((available / item.owned) * 100))) : 0;
 
@@ -693,7 +690,7 @@
               </div>
             </td>
             <td class="p-4 text-center font-mono text-lg font-black text-blue-900">${item.owned}</td>
-            <td class="p-4 text-center font-mono text-lg font-bold text-slate-700 border-l border-slate-200 bg-slate-50/50">${liveStorage}</td>
+            <td class="p-4 text-center font-mono text-lg font-bold text-slate-700 bg-slate-50/50">${item.storage}</td>
             <td class="p-4 text-center font-mono text-base font-semibold text-slate-500">${item.display}</td>
             <td class="p-4 text-center font-mono text-lg text-amber-600 font-black">${activeBorrowCount > 0 ? activeBorrowCount : '-'}</td>
             <td class="p-4 text-center font-mono text-base">${faultyBadge}</td>
@@ -794,7 +791,6 @@
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
       
-      // MATH FIX: Real-world availability check for date range
       const baseCapacity = targetItem.owned - (targetItem.faulty || 0);
 
       const cleanReqStart = cleanToIsoDate(reqStart);
@@ -1098,7 +1094,6 @@
             return sum;
           }, 0);
 
-          // MATH FIX: Real-world availability check
           const baseCapacity = item.owned - (item.faulty || 0);
           const available = Math.max(0, baseCapacity - usedQty);
           
