@@ -362,7 +362,6 @@
   </div>
 
   <script>
-    // --- UPDATED V2 API URL ---
     const API_URL = "https://script.google.com/macros/s/AKfycbxRbpM6rmKReMN95Nwy-cThcU3Sd8BbZhV1n71uTsguEr1uQYdsCh_R46Jy5GprJcH2Ig/exec";
 
     let state = { items: [], borrows: [] };
@@ -573,7 +572,11 @@
         const catItems = sortedAllItems.filter(i => i.category === cat);
         catItems.forEach(item => {
           const activeBorrowCount = state.borrows.filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED").reduce((sum, b) => sum + b.qty, 0);
-          const available = Math.max(0, item.storage - activeBorrowCount); 
+          
+          // FIX: Available = (Storage + Display) - Borrows
+          const totalUsable = item.storage + item.display;
+          const available = Math.max(0, totalUsable - activeBorrowCount); 
+          
           borrowHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
           stockHTML += `<option value="${item.id}">${item.name}</option>`;
         });
@@ -664,11 +667,11 @@
           .filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED")
           .reduce((sum, b) => sum + b.qty, 0);
 
-        const totalOwned = item.storage;
-        const inCabinet = totalOwned - item.display - (item.faulty||0);
-        const available = Math.max(0, inCabinet - activeBorrowCount); 
+        // FIX: Available = (Storage + Display) - Borrows
+        const totalUsable = item.storage + item.display;
+        const available = Math.max(0, totalUsable - activeBorrowCount); 
         
-        const pct = totalOwned > 0 ? Math.max(0, Math.min(100, Math.round((available / totalOwned) * 100))) : 0;
+        const pct = item.owned > 0 ? Math.max(0, Math.min(100, Math.round((available / item.owned) * 100))) : 0;
 
         let barColor = 'bg-gradient-to-r from-emerald-400 to-emerald-500';
         let badgeBg = 'bg-blue-50 text-blue-800 border-blue-200';
@@ -790,6 +793,9 @@
       const targetItem = state.items.find(i => String(i.id) === String(itemId));
       if (!targetItem) return { isAvailable: false, availableQty: 0, totalOwned: 0 };
       
+      // FIX: Available = (Storage + Display) - Borrows
+      const baseCapacity = targetItem.storage + targetItem.display; 
+
       const cleanReqStart = cleanToIsoDate(reqStart);
       const cleanReqEnd = cleanToIsoDate(reqEnd);
 
@@ -798,7 +804,8 @@
         return (cleanToIsoDate(b.borrowDate) <= cleanReqEnd && cleanToIsoDate(b.returnDate) >= cleanReqStart);
       });
       const maxReservedQty = overlappingBorrows.reduce((sum, b) => sum + b.qty, 0);
-      const availableForDates = targetItem.storage - maxReservedQty; 
+      const availableForDates = baseCapacity - maxReservedQty; 
+      
       return { isAvailable: availableForDates >= requestedQty, availableQty: availableForDates, totalOwned: targetItem.owned };
     }
 
@@ -1091,15 +1098,17 @@
             return sum;
           }, 0);
 
-          const available = Math.max(0, item.storage - usedQty);
+          // FIX: Available = (Storage + Display) - Borrows
+          const baseCapacity = item.storage + item.display;
+          const available = Math.max(0, baseCapacity - usedQty);
           
           let cellStyle = 'bg-emerald-400 border-emerald-500 text-emerald-900'; 
-          if (item.storage === 0) cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
+          if (baseCapacity === 0) cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
           else if (available === 0) cellStyle = 'bg-rose-500 border-rose-600 text-white'; 
-          else if (available < item.storage * 0.5) cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
+          else if (available < baseCapacity * 0.5) cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
 
           const bgCol = isOffDay ? 'bg-slate-200/50' : ''; 
-          const displayVal = item.storage === 0 ? '-' : available;
+          const displayVal = baseCapacity === 0 ? '-' : available;
 
           html += `<td class="p-0.5 border-l border-slate-100 ${bgCol}">
             <div class="group/cell relative w-full h-6 flex items-center justify-center rounded-sm border ${cellStyle} font-mono transition-all cursor-crosshair">
