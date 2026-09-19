@@ -358,7 +358,7 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxjucLwvm10q9911NRGylfH_pbVore3yTG5NwYDfiPI_3jFcBPJYgz9hqe-TEEZrpcu7g/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxfanuciEVBTB66lFHAzNVzJDYj1RXaN6RJX4XQQT1IcmW47sL6oqan6AXlfuxlxM8-Cw/exec";
 
     let state = { items: [], borrows: [] };
     let sortColumn = 'status';
@@ -392,7 +392,7 @@
     let isAdmin = !!adminPin;
     updateAuthUI();
 
-    async function toggleAuth() {
+    function toggleAuth() {
       if (isAdmin) {
         sessionStorage.removeItem('adminPin');
         adminPin = null;
@@ -403,32 +403,15 @@
       } else {
         const pin = prompt("Enter Makerspace Admin PIN:");
         if (!pin) return;
-
-        const btn = document.getElementById('btn-auth');
-        const originalText = btn.innerText;
-        btn.innerHTML = `<span class="animate-pulse">Verifying...</span>`;
-        btn.disabled = true;
-
-        try {
-          const res = await fetch(`${API_URL}?action=VERIFY_PIN&pin=${encodeURIComponent(pin)}`);
-          const data = await res.json();
-
-          if (data.valid) {
-            sessionStorage.setItem('adminPin', pin);
-            adminPin = pin;
-            isAdmin = true;
-            updateAuthUI();
-            renderAll(); 
-          } else {
-            alert("Incorrect PIN. Access Denied.");
-            btn.innerHTML = originalText;
-          }
-        } catch (e) {
-          console.error("Verification error:", e);
-          alert("Network error while verifying PIN.");
-          btn.innerHTML = originalText;
-        } finally {
-          btn.disabled = false;
+        
+        if (pin === "UTHM2026") {
+          sessionStorage.setItem('adminPin', pin);
+          adminPin = pin;
+          isAdmin = true;
+          updateAuthUI();
+          renderAll(); 
+        } else {
+          alert("Incorrect PIN. Access Denied.");
         }
       }
     }
