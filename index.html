@@ -358,8 +358,7 @@
   </div>
 
   <script>
-    // UPDATE URL HERE: 
-    const API_URL = "https://script.google.com/macros/s/AKfycbz_xjEuh3DSeY7bYa9Dixth20fZTUOIte0szTPx8v990xFN6rFdvCtrY3U5ESw5Ud_gJQ/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbxjucLwvm10q9911NRGylfH_pbVore3yTG5NwYDfiPI_3jFcBPJYgz9hqe-TEEZrpcu7g/exec";
 
     let state = { items: [], borrows: [] };
     let sortColumn = 'status';
@@ -681,10 +680,9 @@
           .reduce((sum, b) => sum + b.qty, 0);
 
         const owned = item.owned || 0;
-        const initialStorage = item.storage || 0; // Manual Storage value from Google Sheets
+        const initialStorage = item.storage || 0; 
         const maintenance = item.faulty || 0;
 
-        // WATERFALL LOGIC: Deduct from Storage first, then Display
         const currentStorage = Math.max(0, initialStorage - activeBorrowCount);
         const overflow = Math.max(0, activeBorrowCount - initialStorage);
         const currentDisplay = Math.max(0, (owned - initialStorage - maintenance) - overflow);
