@@ -392,7 +392,8 @@
     let isAdmin = !!adminPin;
     updateAuthUI();
 
-    function toggleAuth() {
+    // SECURE PIN VERIFICATION 
+    async function toggleAuth() {
       if (isAdmin) {
         sessionStorage.removeItem('adminPin');
         adminPin = null;
@@ -402,14 +403,33 @@
         renderAll();
       } else {
         const pin = prompt("Enter Makerspace Admin PIN:");
-        if (pin === "UTHM2026") {
-          sessionStorage.setItem('adminPin', pin);
-          adminPin = pin;
-          isAdmin = true;
-          updateAuthUI();
-          renderAll(); 
-        } else if (pin !== null) {
-          alert("Incorrect PIN. Access Denied.");
+        if (!pin) return;
+
+        const btn = document.getElementById('btn-auth');
+        const originalText = btn.innerText;
+        btn.innerHTML = `<span class="animate-pulse">Verifying...</span>`;
+        btn.disabled = true;
+
+        try {
+          const res = await fetch(`${API_URL}?action=VERIFY_PIN&pin=${encodeURIComponent(pin)}`);
+          const data = await res.json();
+
+          if (data.valid) {
+            sessionStorage.setItem('adminPin', pin);
+            adminPin = pin;
+            isAdmin = true;
+            updateAuthUI();
+            renderAll(); 
+          } else {
+            alert("Incorrect PIN. Access Denied.");
+            btn.innerHTML = originalText;
+          }
+        } catch (e) {
+          console.error("Verification error:", e);
+          alert("Network error while verifying PIN.");
+          btn.innerHTML = originalText;
+        } finally {
+          btn.disabled = false;
         }
       }
     }
@@ -568,8 +588,6 @@
         const catItems = sortedAllItems.filter(i => i.category === cat);
         catItems.forEach(item => {
           const activeBorrowCount = state.borrows.filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED").reduce((sum, b) => sum + b.qty, 0);
-          
-          // Available = Owned - Maintenance - Borrowed
           const available = Math.max(0, item.owned - (item.faulty || 0) - activeBorrowCount); 
           
           borrowHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
