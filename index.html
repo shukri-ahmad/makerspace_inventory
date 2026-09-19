@@ -358,7 +358,8 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxRbpM6rmKReMN95Nwy-cThcU3Sd8BbZhV1n71uTsguEr1uQYdsCh_R46Jy5GprJcH2Ig/exec";
+    // UPDATE URL HERE: 
+    const API_URL = "https://script.google.com/macros/s/AKfycbxCc-Xk27N6ihyEkqiKSo-uz_yAauFW06UksR2zvKBKRiSOY2whBdj5XZRJbeyua8Ar-Q/exec";
 
     let state = { items: [], borrows: [] };
     let sortColumn = 'status';
@@ -392,7 +393,6 @@
     let isAdmin = !!adminPin;
     updateAuthUI();
 
-    // SECURE PIN VERIFICATION 
     async function toggleAuth() {
       if (isAdmin) {
         sessionStorage.removeItem('adminPin');
