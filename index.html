@@ -308,6 +308,10 @@
                 <option value="MARK_FAULTY">Move to Faulty (Needs Repair)</option>
                 <option value="MARK_REPAIRED">Mark as Repaired (Back to Storage)</option>
               </optgroup>
+              <optgroup label="Display Units">
+                <option value="ADD_DISPLAY">Move to Display Rack</option>
+                <option value="REMOVE_DISPLAY">Return from Display Rack</option>
+              </optgroup>
             </select>
           </div>
           
@@ -358,7 +362,7 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxfanuciEVBTB66lFHAzNVzJDYj1RXaN6RJX4XQQT1IcmW47sL6oqan6AXlfuxlxM8-Cw/exec";
+    const API_URL = "https://script.google.com/macros/s/AKfycbwvXwDewbRMGiD57ifDQsjQTr2TA9j-kbXXy5v370eQEReyk5_tIAK7S3_3VJV1eQk/exec";
 
     let state = { items: [], borrows: [] };
     let sortColumn = 'status';
@@ -402,15 +406,13 @@
         renderAll();
       } else {
         const pin = prompt("Enter Makerspace Admin PIN:");
-        if (!pin) return;
-        
         if (pin === "UTHM2026") {
           sessionStorage.setItem('adminPin', pin);
           adminPin = pin;
           isAdmin = true;
           updateAuthUI();
           renderAll(); 
-        } else {
+        } else if (pin !== null) {
           alert("Incorrect PIN. Access Denied.");
         }
       }
@@ -570,6 +572,7 @@
         const catItems = sortedAllItems.filter(i => i.category === cat);
         catItems.forEach(item => {
           const activeBorrowCount = state.borrows.filter(b => String(b.itemId) === String(item.id) && b.status === "BORROWED").reduce((sum, b) => sum + b.qty, 0);
+          
           const available = Math.max(0, item.owned - (item.faulty || 0) - activeBorrowCount); 
           
           borrowHTML += `<option value="${item.id}">${item.name} (${available} available)</option>`;
@@ -663,9 +666,10 @@
           .reduce((sum, b) => sum + b.qty, 0);
 
         const owned = item.owned || 0;
-        const initialStorage = item.storage || 0; 
+        const initialStorage = item.storage || 0; // Manual Storage value from Google Sheets
         const maintenance = item.faulty || 0;
 
+        // WATERFALL LOGIC: Deduct from Storage first, then Display
         const currentStorage = Math.max(0, initialStorage - activeBorrowCount);
         const overflow = Math.max(0, activeBorrowCount - initialStorage);
         const currentDisplay = Math.max(0, (owned - initialStorage - maintenance) - overflow);
