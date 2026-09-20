@@ -413,11 +413,7 @@
           btn.innerText = "Verifying...";
           
           try {
-            const res = await fetch(API_URL, { 
-              method: "POST", 
-              headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-              body: JSON.stringify({ action: "VERIFY_LOGIN", pass: checkPass }) 
-            });
+            const res = await fetch(`${API_URL}?action=VERIFY_LOGIN&pass=${encodeURIComponent(checkPass)}`, { method: "GET" });
             const auth = await res.json();
             
             if (auth.valid) {
@@ -490,30 +486,17 @@
 
     async function fetchData() {
       try {
-        const res = await fetch(API_URL, { method: "GET", redirect: "follow" });
+        const fetchUrl = adminPass ? `${API_URL}?pass=${encodeURIComponent(adminPass)}` : API_URL;
+        const res = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
         
-        // Auto verify stored password if exists
-        if (adminPass && !isAdmin) {
-          try {
-            const authRes = await fetch(API_URL, { 
-              method: "POST", 
-              headers: { "Content-Type": "text/plain;charset=utf-8" }, 
-              body: JSON.stringify({ action: "VERIFY_LOGIN", pass: adminPass }) 
-            });
-            const auth = await authRes.json();
-            if (auth.valid) {
-              isAdmin = true;
-              currentUserEmail = auth.user;
-            } else {
-              localStorage.removeItem('makerspace_admin_pass');
-              adminPass = "";
-            }
-          } catch(err) {}
+        if (state.user) {
+          currentUserEmail = state.user.email || "";
+          isAdmin = !!state.user.isAdmin;
+          updateAuthUI();
         }
-        
-        updateAuthUI();
+
         state.items.forEach(i => i.category = i.category || 'Uncategorized');
         renderAll();
       } catch (e) {
