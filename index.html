@@ -404,33 +404,12 @@
         currentUserEmail = "";
         switchTab('dashboard'); 
         updateAuthUI();
-        renderAll();
+        fetchData();
       } else {
         const pass = prompt("Enter Admin Password:");
         if (pass) {
-          const checkPass = pass.trim();
-          const btn = document.getElementById('btn-auth');
-          btn.innerText = "Verifying...";
-          
-          try {
-            const res = await fetch(`${API_URL}?action=VERIFY_LOGIN&pass=${encodeURIComponent(checkPass)}`, { method: "GET" });
-            const auth = await res.json();
-            
-            if (auth.valid) {
-              adminPass = checkPass;
-              localStorage.setItem('makerspace_admin_pass', adminPass);
-              isAdmin = true;
-              currentUserEmail = auth.user;
-              updateAuthUI();
-              renderAll();
-            } else {
-              alert("Incorrect password. Access denied.");
-              updateAuthUI();
-            }
-          } catch(err) {
-            alert("Login verification failed. Check internet connection.");
-            updateAuthUI();
-          }
+          adminPass = pass.trim();
+          fetchData(true);
         }
       }
     }
@@ -484,7 +463,7 @@
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
-    async function fetchData() {
+    async function fetchData(fromUserAttempt = false) {
       try {
         const fetchUrl = adminPass ? `${API_URL}?pass=${encodeURIComponent(adminPass)}` : API_URL;
         const res = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
@@ -494,9 +473,17 @@
         if (state.user) {
           currentUserEmail = state.user.email || "";
           isAdmin = !!state.user.isAdmin;
-          updateAuthUI();
+          
+          if (isAdmin) {
+            localStorage.setItem('makerspace_admin_pass', adminPass);
+          } else if (fromUserAttempt) {
+            alert("Incorrect password. Access denied.");
+            adminPass = "";
+            localStorage.removeItem('makerspace_admin_pass');
+          }
         }
-
+        
+        updateAuthUI();
         state.items.forEach(i => i.category = i.category || 'Uncategorized');
         renderAll();
       } catch (e) {
