@@ -396,6 +396,30 @@
     };
     const targetCategoryOrder = ['Robot', 'Microcontroller', 'Expansion Board', 'Arduino Shield', '3D Printers', 'Drone'];
 
+    // Cache-Busting JSONP Engine to bypass CORS and Redirect issues completely
+    function jsonpFetch(url, params) {
+      return new Promise((resolve, reject) => {
+        const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
+        window[callbackName] = (data) => {
+          delete window[callbackName];
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          resolve(data);
+        };
+        const script = document.createElement('script');
+        const queryParams = new URLSearchParams(params);
+        queryParams.set('callback', callbackName);
+        queryParams.set('_ts', Date.now()); // Prevent browser response caching
+        
+        script.src = url + '?' + queryParams.toString();
+        script.onerror = () => {
+          delete window[callbackName];
+          if (script && script.parentNode) script.parentNode.removeChild(script);
+          reject(new Error("JSONP Request Failed"));
+        };
+        document.body.appendChild(script);
+      });
+    }
+
     async function toggleAuth() {
       if (isAdmin) {
         localStorage.removeItem('makerspace_admin_pass');
@@ -465,10 +489,10 @@
 
     async function fetchData(fromUserAttempt = false) {
       try {
-        const fetchUrl = adminPass ? `${API_URL}?pass=${encodeURIComponent(adminPass)}` : API_URL;
-        const res = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
-        if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
-        state = await res.json();
+        const queryParams = {};
+        if (adminPass) queryParams.pass = adminPass;
+
+        state = await jsonpFetch(API_URL, queryParams);
         
         if (state.user) {
           currentUserEmail = state.user.email || "";
