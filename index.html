@@ -7,8 +7,6 @@
   
   <link rel="icon" type="image/jpeg" href="LogoMakerspace.jpg">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Sign-In SDK -->
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700;800&display=swap" rel="stylesheet">
@@ -68,21 +66,9 @@
         <button onclick="switchTab('stock')" id="nav-stock" class="hidden px-5 py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition-all hover:-translate-y-0.5">Manage Stock</button>
         
         <div class="w-px h-6 bg-blue-800 mx-2 hidden md:block"></div>
-        
-        <!-- Google Login Container -->
-        <div id="g_id_onload"
-             data-client_id="845233158914-r2g93v4q84k86b2u3c28a8d1e2f3g4h5.apps.googleusercontent.com"
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
-        <div id="google-btn-container" class="g_id_signin" data-type="standard" data-size="medium" data-theme="dark" data-text="sign_in_with" data-shape="rectangular" data-logo_alignment="left"></div>
-
-        <!-- Logged In Admin Badge -->
-        <div id="user-badge" class="hidden px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-900/80 text-emerald-100 border border-emerald-600 shadow-inner flex items-center gap-2">
-          <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
-          <span id="user-email-text">Admin</span>
-          <button onclick="logoutAdmin()" class="ml-2 text-[10px] bg-emerald-950 hover:bg-rose-900 px-2 py-0.5 rounded text-slate-300 hover:text-white transition-colors">Logout</button>
-        </div>
+        <button onclick="toggleAuth()" id="btn-auth" class="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest bg-slate-900 hover:bg-black text-amber-400 border border-slate-700 transition-all shadow-inner hover:shadow-amber-500/20">
+          Admin Login
+        </button>
       </div>
     </div>
   </nav>
@@ -381,7 +367,7 @@
     let state = { items: [], borrows: [] };
     let isAdmin = false;
     let currentUserEmail = "";
-    let googleIdToken = localStorage.getItem('google_id_token') || "";
+    let adminPass = localStorage.getItem('makerspace_admin_pass') || "";
 
     let sortColumn = 'status';
     let sortAscending = true;
@@ -410,43 +396,42 @@
     };
     const targetCategoryOrder = ['Robot', 'Microcontroller', 'Expansion Board', 'Arduino Shield', '3D Printers', 'Drone'];
 
-    // GOOGLE SIGN-IN CALLBACK
-    function handleCredentialResponse(response) {
-      if (response.credential) {
-        googleIdToken = response.credential;
-        localStorage.setItem('google_id_token', googleIdToken);
+    function toggleAuth() {
+      if (isAdmin) {
+        localStorage.removeItem('makerspace_admin_pass');
+        adminPass = "";
+        isAdmin = false;
+        currentUserEmail = "";
+        switchTab('dashboard'); 
+        updateAuthUI();
         fetchData();
+      } else {
+        const pass = prompt("Enter Admin Password:");
+        if (pass) {
+          adminPass = pass.trim();
+          fetchData(true);
+        }
       }
     }
 
-    function logoutAdmin() {
-      googleIdToken = "";
-      localStorage.removeItem('google_id_token');
-      isAdmin = false;
-      currentUserEmail = "";
-      switchTab('dashboard');
-      updateAuthUI();
-      fetchData();
-    }
-
     function updateAuthUI() {
+      const btn = document.getElementById('btn-auth');
       const navBorrow = document.getElementById('nav-borrow');
       const navStock = document.getElementById('nav-stock');
       const checkAll = document.getElementById('check-all-borrows');
-      const gBtn = document.getElementById('google-btn-container');
-      const userBadge = document.getElementById('user-badge');
-      const userText = document.getElementById('user-email-text');
-
       if (isAdmin) {
-        userText.innerText = currentUserEmail ? currentUserEmail : "Admin";
-        userBadge.classList.remove('hidden');
-        gBtn.classList.add('hidden');
+        btn.innerHTML = `<span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> ${currentUserEmail || "Logout"}</span>`;
+        btn.classList.replace('bg-slate-900', 'bg-emerald-900');
+        btn.classList.replace('text-amber-400', 'text-emerald-100');
+        btn.classList.replace('border-slate-700', 'border-emerald-700');
         navBorrow.classList.remove('hidden');
         navStock.classList.remove('hidden');
         if(checkAll) checkAll.classList.remove('hidden');
       } else {
-        userBadge.classList.add('hidden');
-        gBtn.classList.remove('hidden');
+        btn.innerHTML = `Admin Login`;
+        btn.classList.replace('bg-emerald-900', 'bg-slate-900');
+        btn.classList.replace('text-emerald-100', 'text-amber-400');
+        btn.classList.replace('border-emerald-700', 'border-slate-700');
         navBorrow.classList.add('hidden');
         navStock.classList.add('hidden');
         if(checkAll) checkAll.classList.add('hidden');
@@ -478,9 +463,9 @@
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
-    async function fetchData() {
+    async function fetchData(fromUserLogin = false) {
       try {
-        const fetchUrl = googleIdToken ? `${API_URL}?id_token=${encodeURIComponent(googleIdToken)}` : API_URL;
+        const fetchUrl = adminPass ? `${API_URL}?pass=${encodeURIComponent(adminPass)}` : API_URL;
         const res = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
@@ -488,6 +473,13 @@
         if (state.user) {
           currentUserEmail = state.user.email || "";
           isAdmin = !!state.user.isAdmin;
+          if (isAdmin) {
+            localStorage.setItem('makerspace_admin_pass', adminPass);
+          } else if (fromUserLogin) {
+            alert("Incorrect password. Access denied.");
+            adminPass = "";
+            localStorage.removeItem('makerspace_admin_pass');
+          }
           updateAuthUI();
         }
 
@@ -1022,8 +1014,8 @@
     }
 
     async function sendPost(payload) {
-      if(!isAdmin) { alert("You must be signed in with an approved Admin Google account."); return; }
-      payload.id_token = googleIdToken; 
+      if(!isAdmin) { alert("You must be logged in as an Admin."); return; }
+      payload.pass = adminPass; 
       
       try {
         const bodyParams = new URLSearchParams(payload);
