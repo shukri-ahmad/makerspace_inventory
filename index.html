@@ -420,7 +420,7 @@
       const navStock = document.getElementById('nav-stock');
       const checkAll = document.getElementById('check-all-borrows');
       if (isAdmin) {
-        btn.innerHTML = `<span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> ${currentUserEmail || "Logout"}</span>`;
+        btn.innerHTML = `<span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div> Logout (${currentUserEmail || "Admin"})</span>`;
         btn.classList.replace('bg-slate-900', 'bg-emerald-900');
         btn.classList.replace('text-amber-400', 'text-emerald-100');
         btn.classList.replace('border-slate-700', 'border-emerald-700');
