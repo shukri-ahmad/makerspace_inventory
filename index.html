@@ -362,7 +362,10 @@
   </div>
 
   <script>
-    const API_URL = "https://script.google.com/macros/s/AKfycbxq0SB6eLyW96o2oe9RkWfEXa5-QYySHCJ5ffQoFmG-ezIvHbE_iTFqRaoVe7isz9eyKQ/exec";
+    // ==========================================
+    // YOUR NEW APP SCRIPT URL
+    // ==========================================
+    const API_URL = "https://script.google.com/macros/s/AKfycbxS7UR0KVLuZk-7LcenVjqjEESxR3Ccd8-JMRgGH4iMGJ8Z_rBgdP44HA6RCrzQPrEfCg/exec";
 
     let state = { items: [], borrows: [] };
     let isAdmin = false;
@@ -396,39 +399,6 @@
     };
     const targetCategoryOrder = ['Robot', 'Microcontroller', 'Expansion Board', 'Arduino Shield', '3D Printers', 'Drone'];
 
-    // JSONP with timeout and error fallback
-    function jsonpFetch(url, params) {
-      return new Promise((resolve, reject) => {
-        const callbackName = 'jsonp_cb_' + Math.round(100000 * Math.random());
-        let timer = setTimeout(() => {
-          delete window[callbackName];
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-          reject(new Error("JSONP Timeout"));
-        }, 8000);
-
-        window[callbackName] = (data) => {
-          clearTimeout(timer);
-          delete window[callbackName];
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-          resolve(data);
-        };
-
-        const script = document.createElement('script');
-        const queryParams = new URLSearchParams(params);
-        queryParams.set('callback', callbackName);
-        queryParams.set('_ts', Date.now()); 
-        
-        script.src = url + '?' + queryParams.toString();
-        script.onerror = () => {
-          clearTimeout(timer);
-          delete window[callbackName];
-          if (script && script.parentNode) script.parentNode.removeChild(script);
-          reject(new Error("JSONP Load Failed"));
-        };
-        document.body.appendChild(script);
-      });
-    }
-
     async function toggleAuth() {
       if (isAdmin) {
         localStorage.removeItem('makerspace_admin_pass');
@@ -442,7 +412,8 @@
         const pass = prompt("Enter Admin Password:");
         if (pass) {
           adminPass = pass.trim();
-          fetchData(true);
+          document.getElementById('btn-auth').innerText = "Verifying...";
+          await fetchData(true);
         }
       }
     }
@@ -497,43 +468,43 @@
     }
 
     async function fetchData(fromUserAttempt = false) {
-      const queryParams = {};
-      if (adminPass) queryParams.pass = adminPass;
-
       try {
-        // Primary Attempt: JSONP
-        state = await jsonpFetch(API_URL, queryParams);
-      } catch (jsonpErr) {
-        console.warn("JSONP failed, trying standard fetch...", jsonpErr);
-        try {
-          // Secondary Fallback Attempt: Standard fetch
-          const fetchUrl = adminPass ? `${API_URL}?pass=${encodeURIComponent(adminPass)}` : API_URL;
-          const res = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
-          if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
-          state = await res.json();
-        } catch (fetchErr) {
-          console.error("Fetch Error:", fetchErr);
-          alert("Failed to load inventory data. Please check connection and refresh.");
-          return;
+        // We add a timestamp to force the browser to fetch a live update instead of caching
+        let fetchUrl = API_URL + "?_t=" + Date.now();
+        if (adminPass) {
+          fetchUrl += "&pass=" + encodeURIComponent(adminPass);
         }
-      }
-
-      if (state.user) {
-        currentUserEmail = state.user.email || "";
-        isAdmin = !!state.user.isAdmin;
         
-        if (isAdmin) {
-          localStorage.setItem('makerspace_admin_pass', adminPass);
-        } else if (fromUserAttempt) {
-          alert("Incorrect password. Access denied.");
-          adminPass = "";
-          localStorage.removeItem('makerspace_admin_pass');
+        const res = await fetch(fetchUrl);
+        if (!res.ok) throw new Error("HTTP Error");
+        
+        state = await res.json();
+        
+        if (state.user) {
+          currentUserEmail = state.user.email || "";
+          isAdmin = !!state.user.isAdmin;
+          
+          if (isAdmin) {
+            localStorage.setItem('makerspace_admin_pass', adminPass);
+          } else if (fromUserAttempt) {
+            alert("Incorrect password. Access denied.");
+            adminPass = "";
+            localStorage.removeItem('makerspace_admin_pass');
+          }
+        }
+        
+        updateAuthUI();
+        state.items.forEach(i => i.category = i.category || 'Uncategorized');
+        renderAll();
+      } catch (e) {
+        console.error("Fetch Error:", e);
+        if (fromUserAttempt) {
+            alert("Connection error during login. Please try again.");
+            updateAuthUI();
+        } else {
+            document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-500 font-bold">Failed to load inventory data. Please refresh.</td></tr>`;
         }
       }
-      
-      updateAuthUI();
-      state.items.forEach(i => i.category = i.category || 'Uncategorized');
-      renderAll();
     }
 
     function switchTab(tabName) {
