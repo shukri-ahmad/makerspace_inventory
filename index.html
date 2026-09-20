@@ -396,7 +396,7 @@
     };
     const targetCategoryOrder = ['Robot', 'Microcontroller', 'Expansion Board', 'Arduino Shield', '3D Printers', 'Drone'];
 
-    function toggleAuth() {
+    async function toggleAuth() {
       if (isAdmin) {
         localStorage.removeItem('makerspace_admin_pass');
         adminPass = "";
@@ -404,12 +404,34 @@
         currentUserEmail = "";
         switchTab('dashboard'); 
         updateAuthUI();
-        fetchData();
+        renderAll();
       } else {
         const pass = prompt("Enter Admin Password:");
         if (pass) {
-          adminPass = pass.trim();
-          fetchData(true);
+          const checkPass = pass.trim();
+          const btn = document.getElementById('btn-auth');
+          btn.innerText = "Verifying...";
+          
+          try {
+            const bodyParams = new URLSearchParams({ action: "VERIFY_LOGIN", pass: checkPass });
+            const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: bodyParams });
+            const auth = await res.json();
+            
+            if (auth.valid) {
+              adminPass = checkPass;
+              localStorage.setItem('makerspace_admin_pass', adminPass);
+              isAdmin = true;
+              currentUserEmail = auth.user;
+              updateAuthUI();
+              renderAll();
+            } else {
+              alert("Incorrect password. Access denied.");
+              updateAuthUI();
+            }
+          } catch(err) {
+            alert("Login verification failed. Check internet connection.");
+            updateAuthUI();
+          }
         }
       }
     }
@@ -463,26 +485,27 @@
       return `${parts[2]}/${parts[1]}/${parts[0]}`;
     }
 
-    async function fetchData(fromUserLogin = false) {
+    async function fetchData() {
       try {
-        const fetchUrl = adminPass ? `${API_URL}?pass=${encodeURIComponent(adminPass)}` : API_URL;
-        const res = await fetch(fetchUrl, { method: "GET", redirect: "follow" });
+        const res = await fetch(API_URL, { method: "GET", redirect: "follow" });
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
         
-        if (state.user) {
-          currentUserEmail = state.user.email || "";
-          isAdmin = !!state.user.isAdmin;
-          if (isAdmin) {
-            localStorage.setItem('makerspace_admin_pass', adminPass);
-          } else if (fromUserLogin) {
-            alert("Incorrect password. Access denied.");
-            adminPass = "";
+        // Auto verify stored password if exists
+        if (adminPass && !isAdmin) {
+          const bodyParams = new URLSearchParams({ action: "VERIFY_LOGIN", pass: adminPass });
+          const authRes = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: bodyParams });
+          const auth = await authRes.json();
+          if (auth.valid) {
+            isAdmin = true;
+            currentUserEmail = auth.user;
+          } else {
             localStorage.removeItem('makerspace_admin_pass');
+            adminPass = "";
           }
-          updateAuthUI();
         }
-
+        
+        updateAuthUI();
         state.items.forEach(i => i.category = i.category || 'Uncategorized');
         renderAll();
       } catch (e) {
