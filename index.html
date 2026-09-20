@@ -150,8 +150,8 @@
                 <th class="p-4 text-center font-extrabold text-emerald-800 bg-emerald-50/50 border-l border-emerald-100">Available Now</th>
               </tr>
             </thead>
-            <!-- SKELETON LOADERS -->
             <tbody id="inventory-table-body" class="divide-y divide-slate-100 text-sm">
+              <!-- Initial Skeleton Loader -->
               <tr class="animate-pulse">
                 <td class="p-4"><div class="h-4 bg-slate-200 rounded w-3/4 mb-2"></div><div class="h-2 bg-slate-100 rounded w-1/4"></div></td>
                 <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
@@ -394,6 +394,9 @@
   </div>
 
   <script>
+    // ==========================================
+    // YOUR LIVE APP SCRIPT URL
+    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbxS7UR0KVLuZk-7LcenVjqjEESxR3Ccd8-JMRgGH4iMGJ8Z_rBgdP44HA6RCrzQPrEfCg/exec";
 
     let state = { items: [], borrows: [] };
@@ -427,6 +430,41 @@
       'default': { bgWrap: 'bg-slate-50/40', borderWrap: 'border-slate-200', bgHead: 'bg-slate-100/70', textHead: 'text-slate-900', borderHead: 'border-slate-200', tabActive: 'bg-slate-700 text-white shadow-md border-slate-700', tabInactive: 'bg-white text-slate-700 hover:bg-slate-50 border-slate-200' }
     };
     const targetCategoryOrder = ['Robot', 'Microcontroller', 'Expansion Board', 'Arduino Shield', '3D Printers', 'Drone'];
+
+    // Dynamic Skeleton Loader
+    function showSkeleton() {
+      const tbody = document.getElementById('inventory-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = `
+        <tr class="animate-pulse">
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-3/4 mb-2"></div><div class="h-2 bg-slate-100 rounded w-1/4"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-8 bg-emerald-100 rounded-xl w-12 mx-auto"></div></td>
+        </tr>
+        <tr class="animate-pulse opacity-70">
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-3/4 mb-2"></div><div class="h-2 bg-slate-100 rounded w-1/4"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-8 bg-emerald-100 rounded-xl w-12 mx-auto"></div></td>
+        </tr>
+        <tr class="animate-pulse opacity-40">
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-3/4 mb-2"></div><div class="h-2 bg-slate-100 rounded w-1/4"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-4 bg-slate-200 rounded w-1/2 mx-auto"></div></td>
+          <td class="p-4"><div class="h-8 bg-emerald-100 rounded-xl w-12 mx-auto"></div></td>
+        </tr>
+      `;
+    }
 
     async function toggleAuth() {
       if (isAdmin) {
@@ -497,6 +535,8 @@
     }
 
     async function fetchData(fromUserAttempt = false) {
+      showSkeleton(); // Trigger loading animation immediately
+
       try {
         let fetchUrl = API_URL + "?_t=" + Date.now();
         if (adminPass) {
@@ -529,8 +569,9 @@
         if (fromUserAttempt) {
             alert("Connection error during login. Please try again.");
             updateAuthUI();
+            renderAll(); // Re-render to clear skeleton
         } else {
-            document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-500 font-bold">Failed to load inventory data. Please refresh.</td></tr>`;
+            document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-500 font-bold">Failed to load inventory data. Please check your connection and refresh.</td></tr>`;
         }
       }
     }
@@ -1194,6 +1235,8 @@
       tmr.setDate(tmr.getDate() + 1);
       document.getElementById('return-date').value = tmr.toISOString().split('T')[0];
     }
+    
+    // Initial fetch
     fetchData();
   </script>
 </body>
