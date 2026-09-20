@@ -66,9 +66,12 @@
         <button onclick="switchTab('stock')" id="nav-stock" class="hidden px-5 py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider hover:bg-blue-800 text-blue-100 transition-all hover:-translate-y-0.5">Manage Stock</button>
         
         <div class="w-px h-6 bg-blue-800 mx-2 hidden md:block"></div>
-        <button onclick="toggleAuth()" id="btn-auth" class="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-widest bg-slate-900 hover:bg-black text-amber-400 border border-slate-700 transition-all shadow-inner hover:shadow-amber-500/20">
-          Admin Login
-        </button>
+        
+        <!-- Account Info Badge -->
+        <div id="user-badge" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-900 text-slate-300 border border-slate-700 shadow-inner flex items-center gap-2">
+          <div id="user-dot" class="w-2 h-2 rounded-full bg-slate-500"></div>
+          <span id="user-email-text">Checking user...</span>
+        </div>
       </div>
     </div>
   </nav>
@@ -365,6 +368,9 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbxq0SB6eLyW96o2oe9RkWfEXa5-QYySHCJ5ffQoFmG-ezIvHbE_iTFqRaoVe7isz9eyKQ/exec";
 
     let state = { items: [], borrows: [] };
+    let isAdmin = false;
+    let currentUserEmail = "";
+    
     let sortColumn = 'status';
     let sortAscending = true;
     let editingBorrowId = null;
@@ -392,50 +398,22 @@
     };
     const targetCategoryOrder = ['Robot', 'Microcontroller', 'Expansion Board', 'Arduino Shield', '3D Printers', 'Drone'];
 
-    let adminPin = sessionStorage.getItem('adminPin');
-    let isAdmin = !!adminPin;
-    updateAuthUI();
-
-    function toggleAuth() {
-      if (isAdmin) {
-        sessionStorage.removeItem('adminPin');
-        adminPin = null;
-        isAdmin = false;
-        switchTab('dashboard'); 
-        updateAuthUI();
-        renderAll();
-      } else {
-        const pin = prompt("Enter Makerspace Admin PIN:");
-        if (pin === "UTHM2026") {
-          sessionStorage.setItem('adminPin', pin);
-          adminPin = pin;
-          isAdmin = true;
-          updateAuthUI();
-          renderAll(); 
-        } else if (pin !== null) {
-          alert("Incorrect PIN. Access Denied.");
-        }
-      }
-    }
-
     function updateAuthUI() {
-      const btn = document.getElementById('btn-auth');
       const navBorrow = document.getElementById('nav-borrow');
       const navStock = document.getElementById('nav-stock');
       const checkAll = document.getElementById('check-all-borrows');
+      const userDot = document.getElementById('user-dot');
+      const userText = document.getElementById('user-email-text');
+
       if (isAdmin) {
-        btn.innerHTML = `<span class="flex items-center gap-1.5"><div class="w-2 h-2 rounded-full bg-rose-400 animate-pulse"></div> Logout Admin</span>`;
-        btn.classList.replace('bg-slate-900', 'bg-rose-900');
-        btn.classList.replace('text-amber-400', 'text-rose-100');
-        btn.classList.replace('border-slate-700', 'border-rose-700');
+        userText.innerText = currentUserEmail ? `Admin: ${currentUserEmail}` : "Admin Logged In";
+        userDot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
         navBorrow.classList.remove('hidden');
         navStock.classList.remove('hidden');
         if(checkAll) checkAll.classList.remove('hidden');
       } else {
-        btn.innerHTML = `Admin Login`;
-        btn.classList.replace('bg-rose-900', 'bg-slate-900');
-        btn.classList.replace('text-rose-100', 'text-amber-400');
-        btn.classList.replace('border-rose-700', 'border-slate-700');
+        userText.innerText = currentUserEmail ? `Public: ${currentUserEmail}` : "Read-Only View";
+        userDot.className = "w-2 h-2 rounded-full bg-slate-500";
         navBorrow.classList.add('hidden');
         navStock.classList.add('hidden');
         if(checkAll) checkAll.classList.add('hidden');
@@ -472,6 +450,13 @@
         const res = await fetch(API_URL, { method: "GET", redirect: "follow" });
         if (!res.ok) throw new Error(`HTTP Error! Status: ${res.status}`);
         state = await res.json();
+        
+        if (state.user) {
+          currentUserEmail = state.user.email || "";
+          isAdmin = !!state.user.isAdmin;
+          updateAuthUI();
+        }
+
         state.items.forEach(i => i.category = i.category || 'Uncategorized');
         renderAll();
       } catch (e) {
@@ -666,7 +651,7 @@
           .reduce((sum, b) => sum + b.qty, 0);
 
         const owned = item.owned || 0;
-        const initialStorage = item.storage || 0; // Manual Storage value from Google Sheets
+        const initialStorage = item.storage || 0; 
         const maintenance = item.faulty || 0;
 
         // WATERFALL LOGIC: Deduct from Storage first, then Display
@@ -938,7 +923,7 @@
                  <button onclick="startInlineEdit('${b.id}')" class="text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 px-2 py-1.5 rounded text-[10px] font-bold transition-colors border border-transparent hover:border-amber-200">EDIT</button>
                  <button onclick="handleReturn('${b.id}')" class="text-emerald-700 hover:text-white bg-emerald-100 hover:bg-emerald-600 px-2 py-1.5 rounded text-[10px] font-bold transition-colors shadow-sm">RETURN</button>`;
               } else {
-                actionButtons = `<span class="text-[9px] text-slate-400 italic">Login to edit</span>`;
+                actionButtons = `<span class="text-[9px] text-slate-400 italic">Admin only</span>`;
               }
             }
             const rowClass = isReturned ? "bg-slate-50 opacity-60 grayscale-[50%] border-b border-slate-100" : "bg-white hover:bg-blue-50/40 transition duration-150 group border-b border-slate-100";
@@ -1003,8 +988,7 @@
     }
 
     async function sendPost(payload) {
-      if(!isAdmin) { alert("You must be logged in as Admin to perform this action."); return; }
-      payload.pin = adminPin; 
+      if(!isAdmin) { alert("You must be logged in with an approved Admin Google Account to perform this action."); return; }
       
       try {
         const bodyParams = new URLSearchParams(payload);
