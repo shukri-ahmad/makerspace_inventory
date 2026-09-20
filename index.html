@@ -413,8 +413,11 @@
           btn.innerText = "Verifying...";
           
           try {
-            const bodyParams = new URLSearchParams({ action: "VERIFY_LOGIN", pass: checkPass });
-            const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: bodyParams });
+            const res = await fetch(API_URL, { 
+              method: "POST", 
+              headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+              body: JSON.stringify({ action: "VERIFY_LOGIN", pass: checkPass }) 
+            });
             const auth = await res.json();
             
             if (auth.valid) {
@@ -493,16 +496,21 @@
         
         // Auto verify stored password if exists
         if (adminPass && !isAdmin) {
-          const bodyParams = new URLSearchParams({ action: "VERIFY_LOGIN", pass: adminPass });
-          const authRes = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: bodyParams });
-          const auth = await authRes.json();
-          if (auth.valid) {
-            isAdmin = true;
-            currentUserEmail = auth.user;
-          } else {
-            localStorage.removeItem('makerspace_admin_pass');
-            adminPass = "";
-          }
+          try {
+            const authRes = await fetch(API_URL, { 
+              method: "POST", 
+              headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+              body: JSON.stringify({ action: "VERIFY_LOGIN", pass: adminPass }) 
+            });
+            const auth = await authRes.json();
+            if (auth.valid) {
+              isAdmin = true;
+              currentUserEmail = auth.user;
+            } else {
+              localStorage.removeItem('makerspace_admin_pass');
+              adminPass = "";
+            }
+          } catch(err) {}
         }
         
         updateAuthUI();
@@ -1041,8 +1049,12 @@
       payload.pass = adminPass; 
       
       try {
-        const bodyParams = new URLSearchParams(payload);
-        await fetch(API_URL, { method: "POST", mode: "no-cors", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: bodyParams, redirect: "follow" });
+        await fetch(API_URL, { 
+          method: "POST", 
+          mode: "no-cors", 
+          headers: { "Content-Type": "text/plain;charset=utf-8" }, 
+          body: JSON.stringify(payload) 
+        });
         setTimeout(fetchData, 2000); 
       } catch (e) {
         console.error("Post Error:", e);
