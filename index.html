@@ -379,12 +379,16 @@
             <button onclick="changeCalRange(1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&gt;</button>
           </div>
 
-          <div class="flex space-x-3 text-[10px] font-bold uppercase tracking-wider border border-slate-200 p-2.5 rounded-xl bg-white shadow-sm">
-            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-emerald-400"></div><span class="text-slate-600">Avail</span></div>
-            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-amber-400"></div><span class="text-slate-600">Low</span></div>
-            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-rose-500"></div><span class="text-slate-600">Empty</span></div>
-            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-black"></div><span class="text-slate-600">Holiday/Off</span></div>
+          <!-- UPDATED LEGEND -->
+          <div class="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-wider border border-slate-200 p-2.5 rounded-xl bg-white shadow-sm">
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-emerald-500"></div><span class="text-slate-600">&gt;75%</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-lime-400"></div><span class="text-slate-600">&gt;50%</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-amber-400"></div><span class="text-slate-600">&gt;25%</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-rose-500"></div><span class="text-slate-600">&lt;25%</span></div>
+            <div class="flex items-center space-x-1.5"><div class="w-3 h-3 rounded-sm bg-slate-900"></div><span class="text-slate-600">0</span></div>
+            <div class="flex items-center space-x-1.5 border-l border-slate-200 pl-3"><div class="w-3 h-3 rounded-sm bg-black"></div><span class="text-slate-600">Holiday/Off</span></div>
           </div>
+
         </div>
 
         <div id="heatmap-container" class="w-full rounded-xl overflow-hidden border border-slate-200 shadow-sm"></div>
@@ -394,6 +398,9 @@
   </div>
 
   <script>
+    // ==========================================
+    // YOUR LIVE APP SCRIPT URL
+    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbxS7UR0KVLuZk-7LcenVjqjEESxR3Ccd8-JMRgGH4iMGJ8Z_rBgdP44HA6RCrzQPrEfCg/exec";
 
     let state = { items: [], borrows: [] };
@@ -501,7 +508,7 @@
         btn.classList.replace('border-emerald-700', 'border-slate-700');
         navBorrow.classList.add('hidden');
         navStock.classList.add('hidden');
-        if(checkAll) checkAll.add('hidden');
+        if(checkAll) checkAll.classList.add('hidden');
       }
     }
 
@@ -531,7 +538,7 @@
     }
 
     async function fetchData(fromUserAttempt = false) {
-      showSkeleton();
+      showSkeleton(); 
 
       try {
         let fetchUrl = API_URL + "?_t=" + Date.now();
@@ -1236,11 +1243,22 @@
 
           const baseCapacity = item.owned - (item.faulty || 0);
           const available = Math.max(0, baseCapacity - usedQty);
+          const pct = baseCapacity > 0 ? (available / baseCapacity) * 100 : 0;
           
-          let cellStyle = 'bg-emerald-400 border-emerald-500 text-emerald-900'; 
-          if (baseCapacity === 0) cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
-          else if (available === 0) cellStyle = 'bg-rose-500 border-rose-600 text-white'; 
-          else if (available < baseCapacity * 0.5) cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
+          let cellStyle = ''; 
+          if (baseCapacity === 0) {
+            cellStyle = 'bg-slate-200 border-slate-300 text-slate-500';
+          } else if (available === 0) {
+            cellStyle = 'bg-slate-900 border-black text-white'; 
+          } else if (pct < 25) {
+            cellStyle = 'bg-rose-500 border-rose-600 text-white'; 
+          } else if (pct < 50) {
+            cellStyle = 'bg-amber-400 border-amber-500 text-amber-900'; 
+          } else if (pct <= 75) {
+            cellStyle = 'bg-lime-400 border-lime-500 text-lime-900'; 
+          } else {
+            cellStyle = 'bg-emerald-500 border-emerald-600 text-white'; 
+          }
 
           const bgCol = isOffDay ? 'bg-slate-200/50' : ''; 
           const displayVal = baseCapacity === 0 ? '-' : available;
