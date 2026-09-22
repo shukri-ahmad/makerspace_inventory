@@ -374,9 +374,9 @@
           </div>
           
           <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
-            <button onclick="changeMonth(-1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&lt;</button>
-            <div id="calendar-month-label" class="w-36 text-center font-extrabold text-sm uppercase tracking-widest text-slate-800">Month</div>
-            <button onclick="changeMonth(1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&gt;</button>
+            <button onclick="changeCalRange(-1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&lt;</button>
+            <div id="calendar-month-label" class="w-60 text-center font-extrabold text-xs sm:text-sm uppercase tracking-wider text-slate-800">Date Range</div>
+            <button onclick="changeCalRange(1)" class="px-3 py-1.5 bg-white text-slate-700 font-black rounded-lg shadow-sm hover:bg-amber-400 hover:text-white transition-colors">&gt;</button>
           </div>
 
           <div class="flex space-x-3 text-[10px] font-bold uppercase tracking-wider border border-slate-200 p-2.5 rounded-xl bg-white shadow-sm">
@@ -408,8 +408,7 @@
     let activeCategoryTab = null; 
     let globalSearchQuery = ''; 
     
-    let currentCalMonth = new Date().getMonth();
-    let currentCalYear = new Date().getFullYear();
+    let calStartOffsetDays = 0;
 
     const publicHolidays2026 = [
       '2026-01-01', '2026-02-17', '2026-02-18', '2026-03-20', '2026-03-21', 
@@ -502,7 +501,7 @@
         btn.classList.replace('border-emerald-700', 'border-slate-700');
         navBorrow.classList.add('hidden');
         navStock.classList.add('hidden');
-        if(checkAll) checkAll.classList.add('hidden');
+        if(checkAll) checkAll.add('hidden');
       }
     }
 
@@ -532,7 +531,7 @@
     }
 
     async function fetchData(fromUserAttempt = false) {
-      showSkeleton(); 
+      showSkeleton();
 
       try {
         let fetchUrl = API_URL + "?_t=" + Date.now();
@@ -1125,10 +1124,8 @@
       }
     }
 
-    function changeMonth(offset) {
-      currentCalMonth += offset;
-      if (currentCalMonth > 11) { currentCalMonth = 0; currentCalYear++; }
-      if (currentCalMonth < 0) { currentCalMonth = 11; currentCalYear--; }
+    function changeCalRange(offset) {
+      calStartOffsetDays += offset * 15;
       renderHeatmap();
     }
 
@@ -1140,35 +1137,59 @@
       const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
       const monthColors = ['bg-blue-800', 'bg-rose-800', 'bg-emerald-800', 'bg-amber-800', 'bg-purple-800', 'bg-cyan-800', 'bg-indigo-800', 'bg-pink-800', 'bg-teal-800', 'bg-orange-800', 'bg-fuchsia-800', 'bg-sky-800'];
       
-      const calLabel = document.getElementById('calendar-month-label');
-      if(calLabel) calLabel.innerText = `${monthNames[currentCalMonth]} ${currentCalYear}`;
+      const baseToday = new Date();
+      baseToday.setHours(0,0,0,0);
       
-      const activeThemeColor = monthColors[currentCalMonth];
-
-      const daysInMonth = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+      const startDate = new Date(baseToday);
+      startDate.setDate(startDate.getDate() + calStartOffsetDays);
+      
       const dates = [];
-      for(let i=1; i<=daysInMonth; i++) {
-        dates.push(new Date(currentCalYear, currentCalMonth, i));
+      for (let i = 0; i < 15; i++) {
+        const d = new Date(startDate);
+        d.setDate(startDate.getDate() + i);
+        dates.push(d);
       }
+
+      const endDate = dates[dates.length - 1];
+      const formatShortDate = (d) => `${d.getDate()} ${monthNames[d.getMonth()].substring(0,3)}`;
+      
+      const calLabel = document.getElementById('calendar-month-label');
+      if (calLabel) {
+        if (startDate.getFullYear() === endDate.getFullYear()) {
+          calLabel.innerText = `${formatShortDate(startDate)} - ${formatShortDate(endDate)} ${startDate.getFullYear()}`;
+        } else {
+          calLabel.innerText = `${formatShortDate(startDate)} ${startDate.getFullYear()} - ${formatShortDate(endDate)} ${endDate.getFullYear()}`;
+        }
+      }
+      
+      const activeThemeColor = monthColors[startDate.getMonth()];
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
       let html = `<div class="overflow-x-auto no-scrollbar border-x border-slate-200 rounded-b-xl shadow-inner bg-slate-50">
         <table class="w-full text-center border-collapse">
           <thead>
             <tr class="${activeThemeColor} text-white text-xs uppercase tracking-wider transition-colors duration-500">
-              <th class="p-3 text-left sticky left-0 ${activeThemeColor} z-10 w-48 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.1)] font-extrabold transition-colors duration-500">Equipment Name</th>`;
+              <th class="p-3 text-left sticky left-0 ${activeThemeColor} z-10 w-48 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.2)] font-extrabold transition-colors duration-500">Equipment Name</th>`;
       
       dates.forEach(d => { 
-        const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const yearStr = d.getFullYear();
+        const monthStr = String(d.getMonth()+1).padStart(2,'0');
+        const dayStr = String(d.getDate()).padStart(2,'0');
+        const dateStr = `${yearStr}-${monthStr}-${dayStr}`;
+
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
         const isHoliday = publicHolidays2026.includes(dateStr);
         const isOffDay = isWeekend || isHoliday;
-        
-        const headClass = isOffDay ? 'bg-black text-slate-300 border-black' : `${activeThemeColor} border-white/20`;
+        const isToday = d.getTime() === baseToday.getTime();
 
-        html += `<th class="p-1 min-w-[36px] border-l ${headClass} transition-colors duration-500">
+        let headClass = isOffDay ? 'bg-black text-slate-300 border-black' : `${activeThemeColor} border-white/20`;
+        if (isToday) {
+          headClass = 'bg-amber-500 text-blue-950 font-black border-amber-400 ring-2 ring-amber-400 ring-offset-1 z-10';
+        }
+
+        html += `<th class="p-1 min-w-[36px] border-l ${headClass} transition-colors duration-500" title="${isToday ? 'Today' : ''}">
           <div class="text-[9px] font-bold mb-0.5 opacity-80">${dayNames[d.getDay()].substring(0,3)}</div>
-          <div class="font-mono text-[11px] font-black leading-none">${String(d.getDate()).padStart(2,'0')}</div>
+          <div class="font-mono text-[11px] font-black leading-none">${dayStr}</div>
         </th>`; 
       });
       html += `</tr></thead><tbody class="divide-y divide-slate-200 bg-white">`;
@@ -1197,7 +1218,11 @@
           </td>`;
         
         dates.forEach(d => {
-          const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const yearStr = d.getFullYear();
+          const monthStr = String(d.getMonth()+1).padStart(2,'0');
+          const dayStr = String(d.getDate()).padStart(2,'0');
+          const dateStr = `${yearStr}-${monthStr}-${dayStr}`;
+
           const isWeekend = d.getDay() === 0 || d.getDay() === 6;
           const isHoliday = publicHolidays2026.includes(dateStr);
           const isOffDay = isWeekend || isHoliday;
