@@ -394,9 +394,6 @@
   </div>
 
   <script>
-    // ==========================================
-    // YOUR LIVE APP SCRIPT URL
-    // ==========================================
     const API_URL = "https://script.google.com/macros/s/AKfycbxS7UR0KVLuZk-7LcenVjqjEESxR3Ccd8-JMRgGH4iMGJ8Z_rBgdP44HA6RCrzQPrEfCg/exec";
 
     let state = { items: [], borrows: [] };
@@ -535,7 +532,7 @@
     }
 
     async function fetchData(fromUserAttempt = false) {
-      showSkeleton(); // Trigger loading animation immediately
+      showSkeleton(); 
 
       try {
         let fetchUrl = API_URL + "?_t=" + Date.now();
@@ -569,7 +566,7 @@
         if (fromUserAttempt) {
             alert("Connection error during login. Please try again.");
             updateAuthUI();
-            renderAll(); // Re-render to clear skeleton
+            renderAll(); 
         } else {
             document.getElementById('inventory-table-body').innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-500 font-bold">Failed to load inventory data. Please check your connection and refresh.</td></tr>`;
         }
@@ -1098,7 +1095,13 @@
       const originalText = btn.innerText;
       btn.innerText = "Saving Update..."; btn.disabled = true; btn.classList.add('opacity-75');
 
-      await sendPost({ action: "UPDATE_STOCK", itemId: document.getElementById('stock-item-select').value, type: document.getElementById('stock-type').value, location: document.getElementById('stock-location').value, qty: Number(document.getElementById('stock-qty').value), notes: document.getElementById('stock-notes').value });
+      await sendPost({ 
+        action: "UPDATE_STOCK", 
+        itemId: document.getElementById('stock-item-select').value, 
+        type: document.getElementById('stock-type').value, 
+        qty: Number(document.getElementById('stock-qty').value), 
+        notes: document.getElementById('stock-notes').value 
+      });
       
       document.getElementById('stock-form').reset();
       btn.innerText = originalText; btn.disabled = false; btn.classList.remove('opacity-75');
@@ -1153,7 +1156,7 @@
         <table class="w-full text-center border-collapse">
           <thead>
             <tr class="${activeThemeColor} text-white text-xs uppercase tracking-wider transition-colors duration-500">
-              <th class="p-3 text-left sticky left-0 ${activeThemeColor} z-10 w-48 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.2)] font-extrabold transition-colors duration-500">Equipment Name</th>`;
+              <th class="p-3 text-left sticky left-0 ${activeThemeColor} z-10 w-48 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.1)] font-extrabold transition-colors duration-500">Equipment Name</th>`;
       
       dates.forEach(d => { 
         const dateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
